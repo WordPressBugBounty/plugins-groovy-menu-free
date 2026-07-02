@@ -121,6 +121,29 @@ if ( ! class_exists( 'GroovyMenuStyle' ) ) {
 		}
 
 		/**
+		 * Sanitize scalar or nested values submitted by admin/customizer forms.
+		 *
+		 * @param mixed $value Submitted value.
+		 *
+		 * @return mixed
+		 */
+		protected function sanitizeInputValue( $value ) {
+			if ( is_array( $value ) ) {
+				return array_map( array( $this, 'sanitizeInputValue' ), $value );
+			}
+
+			if ( is_bool( $value ) || is_int( $value ) || is_float( $value ) ) {
+				return $value;
+			}
+
+			if ( is_scalar( $value ) ) {
+				return sanitize_textarea_field( (string) $value );
+			}
+
+			return '';
+		}
+
+		/**
 		 * Get Screenshot of preset
 		 *
 		 * @return bool|mixed
@@ -343,13 +366,18 @@ if ( ! class_exists( 'GroovyMenuStyle' ) ) {
 		public function serialize( $get_all = false, $camelize = true, $get_global = true, $get_storage = true ) {
 			$settings = array();
 
-			if ( isset( $_POST ) && isset( $_POST['wp_customize'] ) ) {
-				$customized = json_decode( stripslashes( $_POST['customized'] ), true );
+			if ( isset( $_POST['wp_customize'], $_POST['customized'] ) ) {
+				$customized = json_decode( wp_unslash( $_POST['customized'] ), true );
+				$customized = is_array( $customized ) ? $customized : array();
 				foreach ( $customized as $field => $value ) {
+					$field    = sanitize_text_field( $field );
+					$value    = $this->sanitizeInputValue( $value );
 					$position = stripos( $field, 'groovy-' );
 					if ( false !== $position ) {
 						$field = explode( '--', str_replace( 'groovy-', '', $field ) );
-						$this->set( $field[1], $value );
+						if ( ! empty( $field[1] ) ) {
+							$this->set( sanitize_key( $field[1] ), $value );
+						}
 					}
 				}
 			}
@@ -1000,25 +1028,6 @@ if ( ! class_exists( 'GroovyMenuStyle' ) ) {
 
 			if ( empty( $options['menu_z_index'] ) ) {
 				$options['menu_z_index'] = '9999';
-			}
-
-			if ( defined( 'GROOVY_MENU_LVER' ) && '2' === GROOVY_MENU_LVER ) {
-				$this->lver = true;
-			}
-
-			if ( $this->lver ) {
-				if ( isset( $options['header']['style'] ) &&
-				     in_array( $options['header']['style'], [ 3, 4 ], true )
-				) {
-					$options['header']['style'] = 1;
-				}
-
-				if ( isset( $options['hover_style'] ) &&
-				     in_array( $options['hover_style'], [ '3', '4', '5', '6', '7' ], true )
-				) {
-					$options['hover_style'] = '1';
-				}
-
 			}
 
 			return $options;

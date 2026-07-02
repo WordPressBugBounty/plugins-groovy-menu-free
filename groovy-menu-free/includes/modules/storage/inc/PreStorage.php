@@ -12,39 +12,39 @@ defined( 'ABSPATH' ) || die( 'This script cannot be accessed directly.' );
 
 
 /**
- * Class PreStorage
+ * Class PreStorage. Cache compiled HTML.
  */
 class PreStorage {
 	/**
-	 * Self object instance
+	 * Self object instance.
 	 *
 	 * @var null|object
 	 */
 	private static $instance = null;
 
 	/**
-	 * Disable storage
+	 * Disable storage flag.
 	 *
 	 * @var array
 	 */
 	private static $disable_storage_flag = false;
 
 	/**
-	 * Storage of Groovy Menu (gm) compiled html
+	 * Storage of Groovy Menu (gm) compiled html.
 	 *
 	 * @var array
 	 */
 	private $gm_storage = array();
 
 	/**
-	 * Storage key-value for preset
+	 * Storage key-value for preset.
 	 *
 	 * @var array
 	 */
 	private $gm_storage_by_preset = array();
 
 	/**
-	 * Singleton self instance
+	 * Singleton self instance.
 	 *
 	 * @return PreStorage
 	 */
@@ -67,14 +67,29 @@ class PreStorage {
 	private function __construct() {
 	}
 
+	/**
+	 * Disable storage flag.
+	 *
+	 * @return void
+	 */
 	public function set_disable_storage() {
 		self::$disable_storage_flag = true;
 	}
 
+	/**
+	 * Enable storage flag.
+	 *
+	 * @return void
+	 */
 	public function set_enable_storage() {
 		self::$disable_storage_flag = false;
 	}
 
+	/**
+	 * Check condition & start storage script.
+	 *
+	 * @return void
+	 */
 	public function start_pre_storage() {
 
 		if ( ! self::$disable_storage_flag ) {
@@ -83,6 +98,11 @@ class PreStorage {
 
 	}
 
+	/**
+	 * Determine GM settings for current page and save compiled HTML.
+	 *
+	 * @return void
+	 */
 	public function collect_current_page_data_by_default() {
 
 		$post_type = GroovyMenuUtils::get_current_page_type();
@@ -156,18 +176,6 @@ class PreStorage {
 			}
 		}
 
-		if ( defined( 'GROOVY_MENU_LVER' ) && '2' === GROOVY_MENU_LVER ) {
-			// Get first preset id only.
-			$presets_list = GroovyMenuPreset::getAll();
-			if ( is_array( $presets_list ) ) {
-				foreach ( $presets_list as $item ) {
-					if ( isset( $item->id ) && $args['gm_preset_id'] = $item->id ) {
-						break;
-					}
-				}
-			}
-		}
-
 		$gm_id = $this->get_id( $args );
 
 		if ( ! $this->check_is_stored_gm( $gm_id ) ) {
@@ -191,12 +199,11 @@ class PreStorage {
 			);
 
 		}
-
 	}
 
 
 	/**
-	 * Return id of gm by params
+	 * Return id of gm by params.
 	 *
 	 * @param array $args id of saved gm.
 	 *
@@ -214,7 +221,7 @@ class PreStorage {
 
 
 	/**
-	 * Return ids of gm by theme_loaction
+	 * Return ids of gm by theme_loaction.
 	 *
 	 * @param array $args params for search.
 	 *
@@ -240,8 +247,9 @@ class PreStorage {
 		return $return_value;
 	}
 
+
 	/**
-	 * Return if exist and compiled array with HTML GM Block
+	 * Return if exist and compiled array with HTML GM Block.
 	 *
 	 * @param string $id id of saved gm.
 	 *
@@ -263,8 +271,9 @@ class PreStorage {
 		return $return_value;
 	}
 
+
 	/**
-	 * Return if exist and compiled array with HTML GM Block
+	 * Return if exist and compiled array with HTML GM Block.
 	 *
 	 * @param string $id id of saved gm.
 	 *
@@ -286,11 +295,14 @@ class PreStorage {
 		return $return_value;
 	}
 
+
 	/**
-	 * Store compiled array with HTML GM Block
+	 * Store compiled array with HTML GM Block.
 	 *
 	 * @param string $id      id of gm.
 	 * @param array  $gm_data array with HTML gm block.
+	 *
+	 * @return void
 	 */
 	public function set_gm( $id, $gm_data ) {
 		if ( empty( $gm_data['theme_location'] ) ) {
@@ -305,7 +317,7 @@ class PreStorage {
 
 
 	/**
-	 * Add param to GM block by its preset id
+	 * Add param to GM block by its preset id.
 	 *
 	 * @param int|string $preset_id params for search.
 	 * @param string     $data_name key param.
@@ -320,7 +332,7 @@ class PreStorage {
 
 		switch ( $data_name ) {
 			case 'font_family':
-				$key = md5( $data );
+				$key                                                            = md5( $data );
 				$this->gm_storage_by_preset[ $preset_id ][ $data_name ][ $key ] = $data;
 				break;
 
@@ -328,8 +340,18 @@ class PreStorage {
 				$this->gm_storage_by_preset[ $preset_id ][ $data_name ] = $data;
 				break;
 		}
+
+		return;
 	}
 
+
+	/**
+	 * Get preset data by key.
+	 *
+	 * @param string $data_name key param.
+	 *
+	 * @return array
+	 */
 	public function get_preset_data_by_key( $data_name ) {
 		$data = array();
 
@@ -344,6 +366,12 @@ class PreStorage {
 		return $data;
 	}
 
+
+	/**
+	 * Get all stored data as list.
+	 *
+	 * @return array
+	 */
 	public function get_stored_gm_list() {
 		$return_value = array();
 
@@ -356,10 +384,22 @@ class PreStorage {
 		return $return_value;
 	}
 
+
+	/**
+	 * Clear stored data (clear cache).
+	 *
+	 * @return void
+	 */
 	public function remove_all_gm() {
 		$this->gm_storage = array();
 	}
 
+
+	/**
+	 * Return all stored data.
+	 *
+	 * @return array
+	 */
 	public function get_all_gm() {
 		return $this->gm_storage;
 	}

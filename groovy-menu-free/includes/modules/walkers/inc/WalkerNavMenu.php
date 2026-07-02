@@ -258,7 +258,6 @@ class WalkerNavMenu extends Walker_Nav_Menu {
 					'type'        => 'checkbox',
 					'default'     => false,
 					'save_id'     => self::GM_THUMB_ENABLE,
-					'lver'        => false,
 				],
 				'thumb-position'                   => [
 					'id'          => 'thumb-position',
@@ -268,7 +267,6 @@ class WalkerNavMenu extends Walker_Nav_Menu {
 					'type'        => 'select',
 					'default'     => 'above',
 					'save_id'     => self::GM_THUMB_POSITION,
-					'lver'        => false,
 					'field_class' => 'gm-thumb-field',
 				],
 				'thumb-max-height'                 => [
@@ -281,7 +279,6 @@ class WalkerNavMenu extends Walker_Nav_Menu {
 					'max-value'   => '3200',
 					'value-type'  => 'px',
 					'save_id'     => self::GM_THUMB_MAX_HEIGHT,
-					'lver'        => false,
 					'field_class' => 'gm-thumb-field',
 				],
 				'thumb-with-url'                   => [
@@ -291,7 +288,6 @@ class WalkerNavMenu extends Walker_Nav_Menu {
 					'type'        => 'checkbox',
 					'default'     => false,
 					'save_id'     => self::GM_THUMB_WITH_URL,
-					'lver'        => false,
 					'field_class' => 'gm-thumb-field',
 				],
 				'thumb-image'                      => [
@@ -301,7 +297,6 @@ class WalkerNavMenu extends Walker_Nav_Menu {
 					'type'        => 'media',
 					'default'     => '',
 					'save_id'     => self::GM_THUMB_IMAGE,
-					'lver'        => false,
 					'field_class' => 'gm-thumb-field gm-thumb--image',
 				],
 				// ------------------------------------------------------------------------------------------- BADGE
@@ -312,7 +307,6 @@ class WalkerNavMenu extends Walker_Nav_Menu {
 					'type'        => 'checkbox',
 					'default'     => false,
 					'save_id'     => self::GM_BADGE_ENABLE,
-					'lver'        => false,
 				],
 				'badge-placement'                  => [
 					'id'          => 'badge-placement',
@@ -322,7 +316,6 @@ class WalkerNavMenu extends Walker_Nav_Menu {
 					'type'        => 'select',
 					'default'     => 'left',
 					'save_id'     => self::GM_BADGE_PLACEMENT,
-					'lver'        => false,
 					'field_class' => 'gm-badge-field gm-badge-field--shared',
 				],
 				'badge-general-position'           => [
@@ -333,7 +326,6 @@ class WalkerNavMenu extends Walker_Nav_Menu {
 					'type'        => 'select',
 					'default'     => 'relative',
 					'save_id'     => self::GM_BADGE_GENERAL_POSITION,
-					'lver'        => false,
 					'field_class' => 'gm-badge-field gm-badge-field--shared',
 				],
 				'badge-x-position'                 => [
@@ -343,7 +335,6 @@ class WalkerNavMenu extends Walker_Nav_Menu {
 					'type'        => 'text',
 					'default'     => '',
 					'save_id'     => self::GM_BADGE_X_POSITION,
-					'lver'        => false,
 					'field_class' => 'gm-badge-field gm-badge-field--shared',
 				],
 				'badge-y-position'                 => [
@@ -353,7 +344,6 @@ class WalkerNavMenu extends Walker_Nav_Menu {
 					'type'        => 'text',
 					'default'     => '',
 					'save_id'     => self::GM_BADGE_Y_POSITION,
-					'lver'        => false,
 					'field_class' => 'gm-badge-field gm-badge-field--shared',
 				],
 				'badge-container-padding'          => [
@@ -363,7 +353,6 @@ class WalkerNavMenu extends Walker_Nav_Menu {
 					'type'        => 'text',
 					'default'     => '',
 					'save_id'     => self::GM_BADGE_CONTAINER_PADDING,
-					'lver'        => false,
 					'field_class' => 'gm-badge-field gm-badge-field--shared',
 				],
 				'badge-container-radius'           => [
@@ -373,7 +362,6 @@ class WalkerNavMenu extends Walker_Nav_Menu {
 					'type'        => 'text',
 					'default'     => '',
 					'save_id'     => self::GM_BADGE_CONTAINER_RADIUS,
-					'lver'        => false,
 					'field_class' => 'gm-badge-field gm-badge-field--shared',
 				],
 				'badge-container-bg'               => [
@@ -383,7 +371,6 @@ class WalkerNavMenu extends Walker_Nav_Menu {
 					'type'        => 'color',
 					'default'     => '',
 					'save_id'     => self::GM_BADGE_CONTAINER_BG,
-					'lver'        => false,
 					'field_class' => 'gm-badge-field gm-badge-field--shared',
 				],
 				'badge-type'                       => [
@@ -394,7 +381,6 @@ class WalkerNavMenu extends Walker_Nav_Menu {
 					'type'        => 'select',
 					'default'     => 'icon',
 					'save_id'     => self::GM_BADGE_TYPE,
-					'lver'        => false,
 					'field_class' => 'gm-badge-field gm-badge-field--shared',
 				],
 				'badge-image'                      => [
@@ -404,7 +390,6 @@ class WalkerNavMenu extends Walker_Nav_Menu {
 					'type'        => 'media',
 					'default'     => '',
 					'save_id'     => self::GM_BADGE_IMAGE,
-					'lver'        => false,
 					'field_class' => 'gm-badge-field gm-badge-type--image',
 				],
 				'badge-icon'                       => [
@@ -414,7 +399,6 @@ class WalkerNavMenu extends Walker_Nav_Menu {
 					'type'        => 'iconpicker',
 					'default'     => '',
 					'save_id'     => self::GM_BADGE_ICON,
-					'lver'        => false,
 					'field_class' => 'gm-badge-field gm-badge-type--icon',
 				],
 				'badge-icon-size'                  => [
@@ -427,7 +411,6 @@ class WalkerNavMenu extends Walker_Nav_Menu {
 					'max-value'   => '2000',
 					'value-type'  => 'px',
 					'save_id'     => self::GM_BADGE_ICON_SIZE,
-					'lver'        => false,
 					'field_class' => 'gm-badge-field gm-badge-type--icon',
 				],
 				'badge-icon-color'                 => [
@@ -437,7 +420,6 @@ class WalkerNavMenu extends Walker_Nav_Menu {
 					'type'        => 'color',
 					'default'     => '',
 					'save_id'     => self::GM_BADGE_ICON_COLOR,
-					'lver'        => false,
 					'field_class' => 'gm-badge-field gm-badge-type--icon',
 				],
 				'badge-text'                       => [
@@ -447,7 +429,6 @@ class WalkerNavMenu extends Walker_Nav_Menu {
 					'type'        => 'text',
 					'default'     => '',
 					'save_id'     => self::GM_BADGE_TEXT,
-					'lver'        => false,
 					'field_class' => 'gm-badge-field gm-badge-type--text',
 				],
 				'badge-text-font-family'           => [
@@ -458,7 +439,6 @@ class WalkerNavMenu extends Walker_Nav_Menu {
 					'type'        => 'font',
 					'default'     => 'inherit',
 					'save_id'     => self::GM_BADGE_TEXT_FONT_FAMILY,
-					'lver'        => false,
 					'field_class' => 'gm-badge-field gm-badge-type--text',
 				],
 				'badge-text-font-variant'          => [
@@ -469,7 +449,6 @@ class WalkerNavMenu extends Walker_Nav_Menu {
 					'type'        => 'font_variant',
 					'default'     => 'inherit',
 					'save_id'     => self::GM_BADGE_TEXT_FONT_VARIANT,
-					'lver'        => false,
 					'field_class' => 'gm-badge-field gm-badge-type--text',
 				],
 				'badge-text-font-size'             => [
@@ -482,7 +461,6 @@ class WalkerNavMenu extends Walker_Nav_Menu {
 					'max-value'   => '512',
 					'value-type'  => 'px',
 					'save_id'     => self::GM_BADGE_TEXT_FONT_SIZE,
-					'lver'        => false,
 					'field_class' => 'gm-badge-field gm-badge-type--text',
 				],
 				'badge-text-font-color'            => [
@@ -492,7 +470,6 @@ class WalkerNavMenu extends Walker_Nav_Menu {
 					'type'        => 'color',
 					'default'     => '',
 					'save_id'     => self::GM_BADGE_TEXT_FONT_COLOR,
-					'lver'        => false,
 					'field_class' => 'gm-badge-field gm-badge-type--text',
 				],
 				// ------------------------------------------------------------------------------------------- OTHER
@@ -510,7 +487,6 @@ class WalkerNavMenu extends Walker_Nav_Menu {
 					'description' => '',
 					'type'        => 'checkbox',
 					'default'     => false,
-					'lver'        => false,
 					'save_id'     => self::MEGAMENU_META_POST_NOT_MOBILE,
 				],
 				'frozen-link'                      => [

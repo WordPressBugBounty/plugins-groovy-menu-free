@@ -2989,31 +2989,12 @@ msgstr ""
 msgid "Dismiss this notice"
 msgstr ""
 
-#: includes/modules/core/inc/GroovyMenuSettings.php:336
-msgid "Need to register your copy of Groovy Menu plugin"
-msgstr ""
-
-#: includes/modules/core/inc/GroovyMenuSettings.php:338
-#, php-format
-msgid ""
-"This copy of Groovy Menu not registered. Please visit to %s page "
-"and activate the plugin."
-msgstr ""
-
 #: includes/modules/core/inc/GroovyMenuSettings.php:338
 #: includes/modules/core/inc/GroovyMenuSettings.php:726
 #: includes/modules/core/inc/GroovyMenuSettings.php:727
 #: includes/modules/core/inc/GroovyMenuSettings.php:802
 #: includes/modules/core/inc/GroovyMenuSettings.php:803
 msgid "Welcome"
-msgstr ""
-
-#: includes/modules/core/inc/GroovyMenuSettings.php:342
-msgid "Until you activate, features will not be available."
-msgstr ""
-
-#: includes/modules/core/inc/GroovyMenuSettings.php:346
-msgid "Register your copy of plugin"
 msgstr ""
 
 #: includes/modules/core/inc/GroovyMenuSettings.php:349
@@ -3170,26 +3151,6 @@ msgstr ""
 msgid ""
 "You need to register your copy of Groovy Menu to activate the "
 "plugin features"
-msgstr ""
-
-#: includes/modules/core/inc/GroovyMenuSettings.php:1481
-msgid "Need to register on URL"
-msgstr ""
-
-#: includes/modules/core/inc/GroovyMenuSettings.php:1485
-msgid "License site"
-msgstr ""
-
-#: includes/modules/core/inc/GroovyMenuSettings.php:1487
-msgid "Check license"
-msgstr ""
-
-#: includes/modules/core/inc/GroovyMenuSettings.php:1489
-msgid "A new license for current site is registered."
-msgstr ""
-
-#: includes/modules/core/inc/GroovyMenuSettings.php:1491
-msgid "Please, refresh the page."
 msgstr ""
 
 #: includes/modules/core/inc/GroovyMenuSettings.php:1500
@@ -3446,18 +3407,6 @@ msgstr ""
 
 #: includes/modules/core/inc/GroovyMenuSettings.php:1909
 msgid "CREATE NEW PRESET"
-msgstr ""
-
-#: includes/modules/core/inc/GroovyMenuSettings.php:1911
-#: includes/modules/core/inc/GroovyMenuSettings.php:1938
-#: includes/modules/core/inc/GroovyMenuSettings.php:1980
-msgid "Available in the"
-msgstr ""
-
-#: includes/modules/core/inc/GroovyMenuSettings.php:1912
-#: includes/modules/core/inc/GroovyMenuSettings.php:1939
-#: includes/modules/core/inc/GroovyMenuSettings.php:1982
-msgid "PRO version"
 msgstr ""
 
 #: includes/modules/core/inc/GroovyMenuSettings.php:1935

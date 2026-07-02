@@ -1,7 +1,7 @@
 <?php defined( 'ABSPATH' ) || die( 'This script cannot be accessed directly.' );
 /*
 Plugin Name: Groovy Menu (free)
-Version: 1.4.3
+Version: 1.4.7
 Description: Groovy menu is a modern adjustable and flexible menu designed for creating mobile-friendly menus with a lot of options.
 Plugin URI: https://groovymenu.grooni.com/
 Author: Grooni.com
@@ -36,7 +36,7 @@ if ( ! defined( 'GROOVY_MENU_LVER' ) ) {
 	return;
 }
 
-define( 'GROOVY_MENU_VERSION', '1.4.3' );
+define( 'GROOVY_MENU_VERSION', '1.4.7' );
 define( 'GROOVY_MENU_DB_VER_OPTION', 'groovy_menu_db_version' );
 define( 'GROOVY_MENU_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GROOVY_MENU_URL', plugin_dir_url( __FILE__ ) );
@@ -236,7 +236,7 @@ if ( ! function_exists( 'groovy_menu_load_textdomain' ) ) {
 	}
 }
 
-add_action( 'plugins_loaded', 'groovy_menu_load_textdomain' );
+add_action( 'init', 'groovy_menu_load_textdomain', 0 );
 
 add_action( 'wp_enqueue_scripts', 'groovy_menu_toolbar' );
 add_action( 'admin_enqueue_scripts', 'groovy_menu_toolbar' );
@@ -270,7 +270,8 @@ if ( ! is_admin() && ! gm_is_wplogin() ) {
 
 if ( ! function_exists( 'groovy_menu_start_pre_storage' ) ) {
 	function groovy_menu_start_pre_storage() {
-		if ( isset( $_GET['gm_action_preview'] ) && $_GET['gm_action_preview'] ) { // @codingStandardsIgnoreLine
+		$gm_action_preview = ! empty( $_GET['gm_action_preview'] ) ? sanitize_key( wp_unslash( $_GET['gm_action_preview'] ) ) : '';
+		if ( $gm_action_preview ) {
 			return;
 		}
 
@@ -282,9 +283,7 @@ if ( ! function_exists( 'groovy_menu_start_pre_storage' ) ) {
 
 
 if ( ! is_admin() && ! gm_is_wplogin() && GroovyMenuUtils::getAutoIntegration() ) {
-	add_action( 'init', 'groovy_menu_start_buffer', 0, 0 );
-	add_action( 'shutdown', 'groovy_menu_pre_shutdown', 0 );
-	add_filter( 'groovy_menu_final_output', 'groovy_menu_add_after_body' );
+	add_action( 'wp_body_open', 'groovy_menu_echo_after_body_markup', 1 );
 	add_filter( 'groovy_menu_after_body_insert', 'groovy_menu_add_markup' );
 }
 
@@ -295,10 +294,7 @@ if ( ! function_exists( 'groovy_menu_start_buffer' ) ) {
 	 * @since 1.0
 	 */
 	function groovy_menu_start_buffer() {
-		if ( is_admin() || gm_is_wplogin() ) {
-			return;
-		}
-		ob_start();
+		return;
 	}
 }
 
@@ -309,13 +305,26 @@ if ( ! function_exists( 'groovy_menu_pre_shutdown' ) ) {
 	 * @since 1.0
 	 */
 	function groovy_menu_pre_shutdown() {
+		return;
+	}
+}
+
+if ( ! function_exists( 'groovy_menu_echo_after_body_markup' ) ) {
+	/**
+	 * Output auto-integrated menu markup on themes that support wp_body_open().
+	 *
+	 * @since 1.4.6
+	 */
+	function groovy_menu_echo_after_body_markup() {
 		if ( is_admin() || gm_is_wplogin() || ! defined( 'GROOVY_MENU_SCRIPTS_INIT' ) ) {
 			return;
 		}
 
-		$final = ob_get_clean();
+		if ( isset( $_GET['gm_action_preview'] ) ) {
+			return;
+		}
 
-		echo apply_filters( 'groovy_menu_final_output', $final );
+		echo wp_kses_post( apply_filters( 'groovy_menu_after_body_insert', '' ) );
 	}
 }
 
@@ -334,7 +343,7 @@ if ( ! function_exists( 'groovy_menu_add_after_body' ) ) {
 			return $output;
 		}
 
-		if ( isset( $_GET['gm_action_preview'] ) ) { // @codingStandardsIgnoreLine
+		if ( isset( $_GET['gm_action_preview'] ) ) {
 			return $output;
 		}
 
@@ -384,10 +393,18 @@ if ( ! function_exists( 'groovy_menu_add_markup' ) ) {
 	}
 }
 
-// This theme uses wp_nav_menu() in one location.
-register_nav_menus( array(
-	'gm_primary' => esc_html__( 'Groovy menu Primary', 'groovy-menu' ),
-) );
+add_action( 'init', 'groovy_menu_register_nav_menus' );
+
+if ( ! function_exists( 'groovy_menu_register_nav_menus' ) ) {
+	/**
+	 * Register Groovy Menu theme locations.
+	 */
+	function groovy_menu_register_nav_menus() {
+		register_nav_menus( array(
+			'gm_primary' => esc_html__( 'Groovy menu Primary', 'groovy-menu' ),
+		) );
+	}
+}
 
 if ( ! function_exists( 'groovy_menu_get_post_types' ) ) {
 	/**
@@ -542,6 +559,9 @@ if ( ! function_exists( 'groovy_menu_scripts_admin' ) ) {
 	 */
 	function groovy_menu_scripts_admin( $hook_suffix ) {
 
+		$request_action    = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : '';
+		$request_preset_id = isset( $_GET['id'] ) ? absint( wp_unslash( $_GET['id'] ) ) : 0;
+
 		// For any admin page.
 		wp_enqueue_style( 'groovy-css-admin-menu', GROOVY_MENU_URL . 'assets/style/admin-common.css', [], GROOVY_MENU_VERSION );
 		wp_enqueue_script( 'groovy-js-admin', GROOVY_MENU_URL . 'assets/js/admin.js', [], GROOVY_MENU_VERSION, true );
@@ -559,7 +579,7 @@ if ( ! function_exists( 'groovy_menu_scripts_admin' ) ) {
 		if ( in_array( $hook_suffix, array(
 				'groovy-menu_page_groovy_menu_integration',
 				'toplevel_page_groovy_menu_integration'
-			), true ) && ! isset( $_GET['action'] ) ) {
+			), true ) && ! $request_action ) {
 			wp_enqueue_script( 'groovy-menu-js-dashboard', GROOVY_MENU_URL . 'assets/js/dashboard.js', array(), GROOVY_MENU_VERSION, true );
 			wp_enqueue_script( 'groovy-menu-js-integration', GROOVY_MENU_URL . 'assets/js/integration.js', array(), GROOVY_MENU_VERSION, true );
 			wp_enqueue_style( 'groovy-menu-style-font-roboto', 'https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap', array(), GROOVY_MENU_VERSION );
@@ -570,7 +590,7 @@ if ( ! function_exists( 'groovy_menu_scripts_admin' ) ) {
 		if ( in_array( $hook_suffix, array(
 				'groovy-menu_page_groovy_menu_settings',
 				'toplevel_page_groovy_menu_settings',
-			), true ) && ! isset( $_GET['action'] ) ) { // @codingStandardsIgnoreLine
+			), true ) && ! $request_action ) {
 			wp_enqueue_script( 'groovy-menu-js-dashboard', GROOVY_MENU_URL . 'assets/js/dashboard.js', array(), GROOVY_MENU_VERSION, true );
 			wp_enqueue_style( 'groovy-menu-style-font-roboto', 'https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap', array(), GROOVY_MENU_VERSION );
 		}
@@ -579,7 +599,7 @@ if ( ! function_exists( 'groovy_menu_scripts_admin' ) ) {
 		if ( in_array( $hook_suffix, array(
 				'groovy-menu_page_groovy_menu_settings',
 				'toplevel_page_groovy_menu_settings',
-			), true ) && isset( $_GET['id'] ) && isset( $_GET['action'] ) && 'edit' === $_GET['action'] ) { // @codingStandardsIgnoreLine
+			), true ) && $request_preset_id && 'edit' === $request_action ) {
 			wp_enqueue_script( 'groovy-menu-js-preset', GROOVY_MENU_URL . 'assets/js/preset.js', [], GROOVY_MENU_VERSION, true );
 			wp_localize_script( 'groovy-menu-js-preset', 'groovyMenuNonce', array( 'style' => esc_attr( wp_create_nonce( 'gm_nonce_preset_save' ) ) ) );
 		}
@@ -599,12 +619,10 @@ if ( ! function_exists( 'groovy_menu_scripts_admin' ) ) {
 			'toplevel_page_groovy_menu_settings',
 			'groovy_menu_integration',
 			'groovy_menu_welcome',
-			'groovy_menu_license',
 			'groovy-menu_page_groovy_menu_settings',
 			'groovy-menu_page_groovy_menu_integration',
 			'groovy-menu_page_groovy_menu_welcome',
 			'toplevel_page_groovy_menu_welcome',
-			'groovy-menu_page_groovy_menu_license',
 			'tools_page_groovy_menu_debug_page',
 			'nav-menus.php',
 		);

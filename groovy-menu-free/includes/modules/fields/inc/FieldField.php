@@ -63,17 +63,17 @@ class FieldField {
 		?>
 		<div
 			class="gm-gui__module<?php echo ( isset( $this->field['type'] ) && $this->field['type'] === 'hiddenInput' ) ? ' gm-gui__module--hidden' : ''; ?>"
-			<?php echo ( isset( $this->field['condition'] ) ) ? ' data-condition=\'' . json_encode( $this->field['condition'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE ) . '\'' : ''; ?>
-			<?php echo ( isset( $this->field['condition_type'] ) ) ? ' data-condition_type="' . $this->field['condition_type'] . '" ' : ''; ?>
+			<?php echo ( isset( $this->field['condition'] ) ) ? ' data-condition=\'' . esc_attr( wp_json_encode( $this->field['condition'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE ) ) . '\'' : ''; ?>
+			<?php echo ( isset( $this->field['condition_type'] ) ) ? ' data-condition_type="' . esc_attr( $this->field['condition_type'] ) . '" ' : ''; ?>
 		>
 
 			<span
-				class="gm-gui__module__title <?php echo ( ! empty( $this->field['title_class'] ) ) ? esc_attr( $this->field['title_class'] ) : ''; ?>"><?php echo __( $this->field['title'] ); ?></span>
+				class="gm-gui__module__title <?php echo ( ! empty( $this->field['title_class'] ) ) ? esc_attr( $this->field['title_class'] ) : ''; ?>"><?php echo wp_kses_post( $this->field['title'] ); ?></span>
 			<?php
 
 			if ( isset( $this->field['description'] ) && ! empty( $this->field['description'] ) ) {
 				?>
-				<p class="gm-gui__module__info"><?php echo __( $this->field['description'] ); ?></p>
+				<p class="gm-gui__module__info"><?php echo wp_kses_post( $this->field['description'] ); ?></p>
 				<?php
 			}
 			$this->renderField();

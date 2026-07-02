@@ -16,10 +16,6 @@ class FieldHeader extends \GroovyMenu\FieldField {
 		if ( is_array( $val ) ) {
 			$val = stripslashes( wp_json_encode( $val ) );
 		}
-		$lver = false;
-		if ( defined( 'GROOVY_MENU_LVER' ) && '2' === GROOVY_MENU_LVER ) {
-			$lver = true;
-		}
 		?>
 		<div id="gm-gui__header-types" class="gm-gui__module__ui">
 			<div class="gm-gui__header-types__options">
@@ -31,15 +27,13 @@ class FieldHeader extends \GroovyMenu\FieldField {
 
 				<div class="gm-gui__header-types__options__list gm-gui__module__select-wrapper">
 					<div class="gm-gui__header-types__title"><?php esc_html_e( 'Type', 'groovy-menu' ); ?></div>
-					<select class="gm-select">
-						<option value="1" selected><?php esc_html_e( 'Classic', 'groovy-menu' ); ?></option>
-						<option value="2"><?php esc_html_e( 'Minimalistic', 'groovy-menu' ); ?></option>
-						<?php if ( ! $lver ) : ?>
-						<option value="3"><?php esc_html_e( 'Sidebar', 'groovy-menu' ); ?></option>
-						<option value="4"><?php esc_html_e( 'Icon sidebar', 'groovy-menu' ); ?></option>
-						<option value="5"><?php esc_html_e( 'Expanding sidebar', 'groovy-menu' ); ?></option>
-						<?php endif; ?>
-					</select>
+						<select class="gm-select">
+							<option value="1" selected><?php esc_html_e( 'Classic', 'groovy-menu' ); ?></option>
+							<option value="2"><?php esc_html_e( 'Minimalistic', 'groovy-menu' ); ?></option>
+							<option value="3"><?php esc_html_e( 'Sidebar', 'groovy-menu' ); ?></option>
+							<option value="4"><?php esc_html_e( 'Icon sidebar', 'groovy-menu' ); ?></option>
+							<option value="5"><?php esc_html_e( 'Expanding sidebar', 'groovy-menu' ); ?></option>
+						</select>
 				</div>
 
 				<div class="gm-gui__header-types__options__align" data-condition="<?php echo esc_attr( '[["logo_type","in",["img","text"]]]' ); ?>">

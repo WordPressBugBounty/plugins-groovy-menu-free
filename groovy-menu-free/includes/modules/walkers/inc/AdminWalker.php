@@ -141,6 +141,7 @@ class AdminWalker extends WalkerNavMenu {
 			'page-tab',
 			'_wpnonce',
 		);
+		$edit_menu_item = isset( $_GET['edit-menu-item'] ) ? sanitize_text_field( wp_unslash( $_GET['edit-menu-item'] ) ) : '';
 
 		$original_title = '';
 		if ( 'taxonomy' === $item->type ) {
@@ -163,7 +164,7 @@ class AdminWalker extends WalkerNavMenu {
 		$classes = array(
 			'menu-item menu-item-depth-' . $depth,
 			'menu-item-' . esc_attr( $item->object ),
-			'menu-item-edit-' . ( ( isset( $_GET['edit-menu-item'] ) && strval( $item_id ) === $_GET['edit-menu-item'] ) ? 'active' : 'inactive' ), // @codingStandardsIgnoreLine
+			'menu-item-edit-' . ( ( '' !== $edit_menu_item && strval( $item_id ) === $edit_menu_item ) ? 'active' : 'inactive' ),
 		);
 
 		$title = $item->title;
@@ -184,11 +185,6 @@ class AdminWalker extends WalkerNavMenu {
 		}
 
 		$title = ( ! isset( $item->label ) || '' === $item->label ) ? $title : $item->label;
-
-		$submenu_text_escaped = '';
-		if ( 0 === $depth ) {
-			$submenu_text_escaped = 'style="display: none;"';
-		}
 
 		$item_classes = array();
 		if ( isset( $item->classes ) && ! empty( $item->classes ) && is_array( $item->classes ) ) {
@@ -233,15 +229,15 @@ class AdminWalker extends WalkerNavMenu {
 		}
 
 		?>
-	<li id="menu-item-<?php echo $item_id; ?>" class="<?php echo implode( ' ', $classes ); ?>">
+	<li id="menu-item-<?php echo esc_attr( $item_id ); ?>" class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>">
 		<div class="menu-item-bar">
 			<div class="menu-item-handle">
-				<label class="item-title" for="menu-item-checkbox-<?php echo $item_id; ?>">
-					<input id="menu-item-checkbox-<?php echo $item_id; ?>" type="checkbox" class="menu-item-checkbox"
-						data-menu-item-id="<?php echo $item_id; ?>" disabled="disabled"/>
+				<label class="item-title" for="menu-item-checkbox-<?php echo esc_attr( $item_id ); ?>">
+					<input id="menu-item-checkbox-<?php echo esc_attr( $item_id ); ?>" type="checkbox" class="menu-item-checkbox"
+						data-menu-item-id="<?php echo esc_attr( $item_id ); ?>" disabled="disabled"/>
 					<span class="item-title"><span
 							class="menu-item-title"><?php echo esc_html( $title ); ?></span> <span
-							class="is-submenu" <?php echo $submenu_text_escaped; ?>><?php _e( 'sub item', 'groovy-menu' ); ?></span></span>
+							class="is-submenu"<?php if ( 0 === $depth ) : ?> style="display: none;"<?php endif; ?>><?php esc_html_e( 'sub item', 'groovy-menu' ); ?></span></span>
 				</label>
 				<span class="item-controls">
 						<span class="item-type"><?php echo esc_html( $itemTypeLabel ); ?></span>
@@ -249,7 +245,7 @@ class AdminWalker extends WalkerNavMenu {
 							<?php
 							printf(
 								'<a href="%s" class="item-move-up" aria-label="%s">&#8593;</a>',
-								wp_nonce_url(
+								esc_url( wp_nonce_url(
 									add_query_arg(
 										array(
 											'action'    => 'move-up-menu-item',
@@ -258,7 +254,7 @@ class AdminWalker extends WalkerNavMenu {
 										remove_query_arg( $removed_args, admin_url( 'nav-menus.php' ) )
 									),
 									'move-menu_item'
-								),
+								) ),
 								esc_attr__( 'Move up', 'groovy-menu' )
 							);
 							?>
@@ -266,7 +262,7 @@ class AdminWalker extends WalkerNavMenu {
 							<?php
 							printf(
 								'<a href="%s" class="item-move-down" aria-label="%s">&#8595;</a>',
-								wp_nonce_url(
+								esc_url( wp_nonce_url(
 									add_query_arg(
 										array(
 											'action'    => 'move-down-menu-item',
@@ -275,13 +271,13 @@ class AdminWalker extends WalkerNavMenu {
 										remove_query_arg( $removed_args, admin_url( 'nav-menus.php' ) )
 									),
 									'move-menu_item'
-								),
+								) ),
 								esc_attr__( 'Move down', 'groovy-menu' )
 							);
 							?>
 						</span>
 					<?php
-					if ( isset( $_GET['edit-menu-item'] ) && strval( $item_id ) === $_GET['edit-menu-item'] ) {
+					if ( '' !== $edit_menu_item && strval( $item_id ) === $edit_menu_item ) {
 						$edit_url = admin_url( 'nav-menus.php' );
 					} else {
 						$edit_url = add_query_arg(
@@ -294,23 +290,23 @@ class AdminWalker extends WalkerNavMenu {
 
 					printf(
 						'<a class="item-edit" id="edit-%s" href="%s" aria-label="%s"><span class="screen-reader-text">%s</span></a>',
-						$item_id,
-						$edit_url,
+						esc_attr( $item_id ),
+						esc_url( $edit_url ),
 						esc_attr__( 'Edit menu item', 'groovy-menu' ),
-						__( 'Edit', 'groovy-menu' )
+						esc_html__( 'Edit', 'groovy-menu' )
 					);
 					?>
 					</span>
 			</div>
 		</div>
 
-		<div class="menu-item-settings wp-clearfix" id="menu-item-settings-<?php echo $item_id; ?>">
+		<div class="menu-item-settings wp-clearfix" id="menu-item-settings-<?php echo esc_attr( $item_id ); ?>">
 			<?php if ( 'custom' === $item->type ) : ?>
 				<p class="field-url description description-wide">
-					<label for="edit-menu-item-url-<?php echo $item_id; ?>">
-						<?php _e( 'URL', 'groovy-menu' ); ?><br/>
-						<input type="text" id="edit-menu-item-url-<?php echo $item_id; ?>"
-							class="widefat code edit-menu-item-url" name="menu-item-url[<?php echo $item_id; ?>]"
+					<label for="edit-menu-item-url-<?php echo esc_attr( $item_id ); ?>">
+						<?php esc_html_e( 'URL', 'groovy-menu' ); ?><br/>
+						<input type="text" id="edit-menu-item-url-<?php echo esc_attr( $item_id ); ?>"
+							class="widefat code edit-menu-item-url" name="menu-item-url[<?php echo esc_attr( $item_id ); ?>]"
 							value="<?php echo esc_attr( $item->url ); ?>"/>
 					</label>
 				</p>
@@ -324,18 +320,18 @@ class AdminWalker extends WalkerNavMenu {
 				</label>
 			</p>
 			<p class="field-title-attribute field-attr-title description description-wide">
-				<label for="edit-menu-item-attr-title-<?php echo $item_id; ?>">
-					<?php _e( 'Title Attribute', 'groovy-menu' ); ?><br/>
-					<input type="text" id="edit-menu-item-attr-title-<?php echo $item_id; ?>"
-						class="widefat edit-menu-item-attr-title" name="menu-item-attr-title[<?php echo $item_id; ?>]"
+				<label for="edit-menu-item-attr-title-<?php echo esc_attr( $item_id ); ?>">
+					<?php esc_html_e( 'Title Attribute', 'groovy-menu' ); ?><br/>
+					<input type="text" id="edit-menu-item-attr-title-<?php echo esc_attr( $item_id ); ?>"
+						class="widefat edit-menu-item-attr-title" name="menu-item-attr-title[<?php echo esc_attr( $item_id ); ?>]"
 						value="<?php echo esc_attr( $item->post_excerpt ); ?>"/>
 				</label>
 			</p>
 			<p class="field-link-target description">
-				<label for="edit-menu-item-target-<?php echo $item_id; ?>">
-					<input type="checkbox" id="edit-menu-item-target-<?php echo $item_id; ?>" value="_blank"
-						name="menu-item-target[<?php echo $item_id; ?>]"<?php checked( $item->target, '_blank' ); ?> />
-					<?php _e( 'Open link in a new tab', 'groovy-menu' ); ?>
+				<label for="edit-menu-item-target-<?php echo esc_attr( $item_id ); ?>">
+					<input type="checkbox" id="edit-menu-item-target-<?php echo esc_attr( $item_id ); ?>" value="_blank"
+						name="menu-item-target[<?php echo esc_attr( $item_id ); ?>]"<?php checked( $item->target, '_blank' ); ?> />
+					<?php esc_html_e( 'Open link in a new tab', 'groovy-menu' ); ?>
 				</label>
 			</p>
 			<?php if ( $gm_menu_block ) : ?>
@@ -356,29 +352,29 @@ class AdminWalker extends WalkerNavMenu {
 				</p>
 			<?php endif; ?>
 			<p class="field-css-classes description description-thin">
-				<label for="edit-menu-item-classes-<?php echo $item_id; ?>">
-					<?php _e( 'CSS Classes (optional)', 'groovy-menu' ); ?><br/>
-					<input type="text" id="edit-menu-item-classes-<?php echo $item_id; ?>"
-						class="widefat code edit-menu-item-classes" name="menu-item-classes[<?php echo $item_id; ?>]"
+				<label for="edit-menu-item-classes-<?php echo esc_attr( $item_id ); ?>">
+					<?php esc_html_e( 'CSS Classes (optional)', 'groovy-menu' ); ?><br/>
+					<input type="text" id="edit-menu-item-classes-<?php echo esc_attr( $item_id ); ?>"
+						class="widefat code edit-menu-item-classes" name="menu-item-classes[<?php echo esc_attr( $item_id ); ?>]"
 						value="<?php echo esc_attr( $item_classes ); ?>"/>
 				</label>
 			</p>
 			<p class="field-xfn description description-thin">
-				<label for="edit-menu-item-xfn-<?php echo $item_id; ?>">
-					<?php _e( 'Link Relationship (XFN)', 'groovy-menu' ); ?><br/>
-					<input type="text" id="edit-menu-item-xfn-<?php echo $item_id; ?>"
-						class="widefat code edit-menu-item-xfn" name="menu-item-xfn[<?php echo $item_id; ?>]"
+				<label for="edit-menu-item-xfn-<?php echo esc_attr( $item_id ); ?>">
+					<?php esc_html_e( 'Link Relationship (XFN)', 'groovy-menu' ); ?><br/>
+					<input type="text" id="edit-menu-item-xfn-<?php echo esc_attr( $item_id ); ?>"
+						class="widefat code edit-menu-item-xfn" name="menu-item-xfn[<?php echo esc_attr( $item_id ); ?>]"
 						value="<?php echo esc_attr( $item->xfn ); ?>"/>
 				</label>
 			</p>
 			<p class="field-description description description-wide">
-				<label for="edit-menu-item-description-<?php echo $item_id; ?>">
-					<?php _e( 'Description', 'groovy-menu' ); ?><br/>
-					<textarea id="edit-menu-item-description-<?php echo $item_id; ?>"
+				<label for="edit-menu-item-description-<?php echo esc_attr( $item_id ); ?>">
+					<?php esc_html_e( 'Description', 'groovy-menu' ); ?><br/>
+					<textarea id="edit-menu-item-description-<?php echo esc_attr( $item_id ); ?>"
 						class="widefat edit-menu-item-description" rows="3" cols="20"
-						name="menu-item-description[<?php echo $item_id; ?>]"><?php echo esc_html( $item->description ); // textarea_escaped ?></textarea>
+						name="menu-item-description[<?php echo esc_attr( $item_id ); ?>]"><?php echo esc_html( $item->description ); // textarea_escaped ?></textarea>
 					<span
-						class="description"><?php _e( 'The description will be displayed in the menu if the current theme supports it.', 'groovy-menu' ); ?></span>
+						class="description"><?php esc_html_e( 'The description will be displayed in the menu if the current theme supports it.', 'groovy-menu' ); ?></span>
 				</label>
 			</p>
 
@@ -400,23 +396,22 @@ class AdminWalker extends WalkerNavMenu {
 
 
 			<fieldset class="field-move hide-if-no-js description description-wide">
-				<span class="field-move-visual-label" aria-hidden="true"><?php _e( 'Move', 'groovy-menu' ); ?></span>
+				<span class="field-move-visual-label" aria-hidden="true"><?php esc_html_e( 'Move', 'groovy-menu' ); ?></span>
 				<button type="button" class="button-link menus-move menus-move-up"
-					data-dir="up"><?php _e( 'Up one', 'groovy-menu' ); ?></button>
+					data-dir="up"><?php esc_html_e( 'Up one', 'groovy-menu' ); ?></button>
 				<button type="button" class="button-link menus-move menus-move-down"
-					data-dir="down"><?php _e( 'Down one', 'groovy-menu' ); ?></button>
+					data-dir="down"><?php esc_html_e( 'Down one', 'groovy-menu' ); ?></button>
 				<button type="button" class="button-link menus-move menus-move-left" data-dir="left"></button>
 				<button type="button" class="button-link menus-move menus-move-right" data-dir="right"></button>
 				<button type="button" class="button-link menus-move menus-move-top"
-					data-dir="top"><?php _e( 'To the top', 'groovy-menu' ); ?></button>
+					data-dir="top"><?php esc_html_e( 'To the top', 'groovy-menu' ); ?></button>
 			</fieldset>
 
 			<div class="menu-item-actions description-wide submitbox">
 				<?php if ( 'custom' !== $item->type && false !== $original_title ) : ?>
 					<p class="link-to-original">
 						<?php
-						/* translators: %s: Link to menu item's original object. */
-						printf( __( 'Original: %s', 'groovy-menu' ), '<a href="' . esc_attr( $item->url ) . '">' . esc_html( $original_title ) . '</a>' );
+						echo esc_html__( 'Original:', 'groovy-menu' ) . ' <a href="' . esc_url( $item->url ) . '">' . esc_html( $original_title ) . '</a>';
 						?>
 					</p>
 				<?php endif; ?>
@@ -424,8 +419,8 @@ class AdminWalker extends WalkerNavMenu {
 				<?php
 				printf(
 					'<a class="item-delete submitdelete deletion" id="delete-%s" href="%s">%s</a>',
-					$item_id,
-					wp_nonce_url(
+					esc_attr( $item_id ),
+					esc_url( wp_nonce_url(
 						add_query_arg(
 							array(
 								'action'    => 'delete-menu-item',
@@ -434,15 +429,15 @@ class AdminWalker extends WalkerNavMenu {
 							admin_url( 'nav-menus.php' )
 						),
 						'delete-menu_item_' . $item_id
-					),
-					__( 'Remove', 'groovy-menu' )
+					) ),
+					esc_html__( 'Remove', 'groovy-menu' )
 				);
 				?>
 				<span class="meta-sep hide-if-no-js"> | </span>
 				<?php
 				printf(
 					'<a class="item-cancel submitcancel hide-if-no-js" id="cancel-%s" href="%s#menu-item-settings-%s">%s</a>',
-					$item_id,
+					esc_attr( $item_id ),
 					esc_url(
 						add_query_arg(
 							array(
@@ -452,23 +447,23 @@ class AdminWalker extends WalkerNavMenu {
 							admin_url( 'nav-menus.php' )
 						)
 					),
-					$item_id,
-					__( 'Cancel', 'groovy-menu' )
+					esc_attr( $item_id ),
+					esc_html__( 'Cancel', 'groovy-menu' )
 				);
 				?>
 			</div>
 
-			<input class="menu-item-data-db-id" type="hidden" name="menu-item-db-id[<?php echo $item_id; ?>]"
-				value="<?php echo $item_id; ?>"/>
-			<input class="menu-item-data-object-id" type="hidden" name="menu-item-object-id[<?php echo $item_id; ?>]"
+			<input class="menu-item-data-db-id" type="hidden" name="menu-item-db-id[<?php echo esc_attr( $item_id ); ?>]"
+				value="<?php echo esc_attr( $item_id ); ?>"/>
+			<input class="menu-item-data-object-id" type="hidden" name="menu-item-object-id[<?php echo esc_attr( $item_id ); ?>]"
 				value="<?php echo esc_attr( $item->object_id ); ?>"/>
-			<input class="menu-item-data-object" type="hidden" name="menu-item-object[<?php echo $item_id; ?>]"
+			<input class="menu-item-data-object" type="hidden" name="menu-item-object[<?php echo esc_attr( $item_id ); ?>]"
 				value="<?php echo esc_attr( $item->object ); ?>"/>
-			<input class="menu-item-data-parent-id" type="hidden" name="menu-item-parent-id[<?php echo $item_id; ?>]"
+			<input class="menu-item-data-parent-id" type="hidden" name="menu-item-parent-id[<?php echo esc_attr( $item_id ); ?>]"
 				value="<?php echo esc_attr( $item->menu_item_parent ); ?>"/>
-			<input class="menu-item-data-position" type="hidden" name="menu-item-position[<?php echo $item_id; ?>]"
+			<input class="menu-item-data-position" type="hidden" name="menu-item-position[<?php echo esc_attr( $item_id ); ?>]"
 				value="<?php echo esc_attr( $item->menu_order ); ?>"/>
-			<input class="menu-item-data-type" type="hidden" name="menu-item-type[<?php echo $item_id; ?>]"
+			<input class="menu-item-data-type" type="hidden" name="menu-item-type[<?php echo esc_attr( $item_id ); ?>]"
 				value="<?php echo esc_attr( $item->type ); ?>"/>
 		</div><!-- .menu-item-settings-->
 		<ul class="menu-item-transport"></ul>
@@ -487,7 +482,7 @@ class AdminWalker extends WalkerNavMenu {
 
 		if ( ! empty( $menu_item_args['menu-item-object'] ) && 'gm_menu_block' === $menu_item_args['menu-item-object'] ) {
 			if ( ! empty( $_POST[ self::MENU_BLOCK_URL ] ) && ! empty( $_POST[ self::MENU_BLOCK_URL ][ $menu_item_db_id ] ) ) {
-				$menublock_url = esc_url( $_POST[ self::MENU_BLOCK_URL ][ $menu_item_db_id ] );
+				$menublock_url = esc_url_raw( wp_unslash( $_POST[ self::MENU_BLOCK_URL ][ $menu_item_db_id ] ) );
 
 				if ( $menublock_url ) {
 					update_post_meta( $menu_item_db_id, self::MENU_BLOCK_URL, $menublock_url );

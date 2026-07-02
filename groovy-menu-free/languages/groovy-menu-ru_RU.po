@@ -3148,19 +3148,6 @@ msgstr "Закрыть"
 msgid "Dismiss this notice"
 msgstr "Закрыть это уведомление"
 
-#: includes/modules/core/inc/GroovyMenuSettings.php:336
-msgid "Need to register your copy of Groovy Menu plugin"
-msgstr "Необходимо зарегистрировать вашу клпию Groovy Menu плагина"
-
-#: includes/modules/core/inc/GroovyMenuSettings.php:338
-#, php-format
-msgid ""
-"This copy of Groovy Menu not registered. Please visit to %s page and "
-"activate the plugin."
-msgstr ""
-"Эта копия Groovy Menu не зарегистрирована. Пожалуйста посетите %s страницу и "
-"активируйте плагин."
-
 #: includes/modules/core/inc/GroovyMenuSettings.php:338
 #: includes/modules/core/inc/GroovyMenuSettings.php:726
 #: includes/modules/core/inc/GroovyMenuSettings.php:727
@@ -3168,14 +3155,6 @@ msgstr ""
 #: includes/modules/core/inc/GroovyMenuSettings.php:803
 msgid "Welcome"
 msgstr "Добро пожаловать!"
-
-#: includes/modules/core/inc/GroovyMenuSettings.php:342
-msgid "Until you activate, features will not be available."
-msgstr "Пока вы не активируете, функции не будут доступны."
-
-#: includes/modules/core/inc/GroovyMenuSettings.php:346
-msgid "Register your copy of plugin"
-msgstr "Зарегистрируйте вашу копию плагина."
 
 #: includes/modules/core/inc/GroovyMenuSettings.php:349
 #: includes/modules/core/inc/GroovyMenuSettings.php:1427
@@ -3338,26 +3317,6 @@ msgid ""
 msgstr ""
 "Вам необходимо зарегистрировать свою копию Groovy Menu, чтобы активировать "
 "функции плагина"
-
-#: includes/modules/core/inc/GroovyMenuSettings.php:1481
-msgid "Need to register on URL"
-msgstr "Нужно зарегистрироваться на URL"
-
-#: includes/modules/core/inc/GroovyMenuSettings.php:1485
-msgid "License site"
-msgstr "Сайт Лицензий"
-
-#: includes/modules/core/inc/GroovyMenuSettings.php:1487
-msgid "Check license"
-msgstr "Проверить лицензию"
-
-#: includes/modules/core/inc/GroovyMenuSettings.php:1489
-msgid "A new license for current site is registered."
-msgstr "Новая лицензия для текущего сайта зарегистрирована."
-
-#: includes/modules/core/inc/GroovyMenuSettings.php:1491
-msgid "Please, refresh the page."
-msgstr "Пожалуйста, обновите страницу."
 
 #: includes/modules/core/inc/GroovyMenuSettings.php:1500
 msgid "Clipboard"
@@ -3622,18 +3581,6 @@ msgstr "Удалить"
 #: includes/modules/core/inc/GroovyMenuSettings.php:1909
 msgid "CREATE NEW PRESET"
 msgstr "СОЗДАТЬ НОВЫЙ ПРЕСЕТ"
-
-#: includes/modules/core/inc/GroovyMenuSettings.php:1911
-#: includes/modules/core/inc/GroovyMenuSettings.php:1938
-#: includes/modules/core/inc/GroovyMenuSettings.php:1980
-msgid "Available in the"
-msgstr "Доступна в"
-
-#: includes/modules/core/inc/GroovyMenuSettings.php:1912
-#: includes/modules/core/inc/GroovyMenuSettings.php:1939
-#: includes/modules/core/inc/GroovyMenuSettings.php:1982
-msgid "PRO version"
-msgstr "PRO версии"
 
 #: includes/modules/core/inc/GroovyMenuSettings.php:1935
 msgid "IMPORT MENU PRESET"
@@ -5182,9 +5129,6 @@ msgstr "Навигационное меню"
 
 #~ msgid "Background position"
 #~ msgstr "Положение фона"
-
-#~ msgid "Available in the PRO version"
-#~ msgstr "Доступна в PRO версии"
 
 #~ msgid ""
 #~ "If you encounter integration problems or find any bugs, please create a "

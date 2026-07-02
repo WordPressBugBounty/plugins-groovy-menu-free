@@ -1659,7 +1659,9 @@ class GroovyMenuUtils {
 					}
 				}
 				if ( empty( $wp_filesystem ) ) {
-					@ob_clean();
+					if ( ob_get_level() > 0 ) {
+						ob_clean();
+					}
 
 					if ( ! $self_install ) {
 						wp_send_json( array(
@@ -2323,76 +2325,7 @@ class GroovyMenuUtils {
 	 * @return bool|string
 	 */
 	public static function check_lic( $immediately = false, $reload = false ) {
-		if ( ! $immediately && get_transient( GROOVY_MENU_DB_VER_OPTION . '__lic_cache' ) ) {
-			$lic_opt = get_option( GROOVY_MENU_DB_VER_OPTION . '__lic' );
-			if ( empty( $lic_opt ) || ! $lic_opt ) {
-				return false;
-			} else {
-				return $lic_opt;
-			}
-		}
-
-		$transient_timer = 2 * MINUTE_IN_SECONDS; // by default
-
-		global $gm_supported_module;
-
-		$check_url = 'https://license.grooni.com/user-dashboard/?glm_action=check&glm_page=product';
-
-		if ( $reload ) {
-			$check_url .= '&glm_reload=1';
-		}
-
-		$check_url .= '&glm_product=groovy-menu';
-		$check_url .= '&glm_theme=' . $gm_supported_module['theme'];
-		$check_url .= '&glm_rs=' . rawurlencode( get_site_url() );
-
-		$body = wp_remote_get( $check_url );
-
-		if ( is_wp_error( $body ) ) {
-			$error_msg = $body->get_error_code() . ' * ' . $body->get_error_message() . ' * ' . $body->get_error_data();
-			$body      = '{}';
-
-			$gm_supported_module['lic_check_error'] = $error_msg;
-
-			add_action( 'gm_before_welcome_output', function () {
-				global $gm_supported_module;
-				if ( ! empty( $gm_supported_module['lic_check_error'] ) ) {
-					echo '<div class="gm-lic-check-error">' . $gm_supported_module['lic_check_error'] . '</div>';
-				}
-			} );
-
-			$transient_timer = 5 * MINUTE_IN_SECONDS;
-
-		} elseif ( isset( $body['body'] ) ) {
-			$body = $body['body'];
-		} else {
-			$body = '{}';
-		}
-
-		$body    = json_decode( $body, true );
-		$lic_opt = false; // by default.
-
-		if ( is_array( $body ) && isset( $body['approve'] ) ) {
-			if ( $body['approve'] === true ) {
-				update_option( GROOVY_MENU_DB_VER_OPTION . '__lic', GROOVY_MENU_VERSION );
-				$lic_opt         = true;
-				$transient_timer = 4 * HOUR_IN_SECONDS;
-			} elseif ( $body['approve'] === false ) {
-				update_option( GROOVY_MENU_DB_VER_OPTION . '__lic', false );
-				$lic_opt         = false;
-				$transient_timer = 3 * MINUTE_IN_SECONDS;
-			}
-
-			$body['gm_version'] = GROOVY_MENU_VERSION;
-
-			update_option( GROOVY_MENU_DB_VER_OPTION . '__lic_data', $body );
-		} else {
-			update_option( GROOVY_MENU_DB_VER_OPTION . '__lic_data', array( 'gm_version' => GROOVY_MENU_VERSION ) );
-		}
-
-		set_transient( GROOVY_MENU_DB_VER_OPTION . '__lic_cache', true, $transient_timer );
-
-		return $lic_opt;
+		return false;
 	}
 
 
@@ -2413,7 +2346,7 @@ class GroovyMenuUtils {
 
 
 	/**
-	 * Check license supported until param.
+	 * Return stored support expiration timestamp.
 	 *
 	 * @return bool|int
 	 */
@@ -2539,10 +2472,10 @@ class GroovyMenuUtils {
 		// php_max_input_vars
 		$php_max_input_vars         = intval( @ini_get( 'max_input_vars' ) );
 		$info['php_max_input_vars'] = array(
-			'title'          => __( 'PHP Max input vars', 'groovy-menu' ),
+			'title'          => esc_html__( 'PHP Max input vars', 'groovy-menu' ),
 			'value'          => $php_max_input_vars,
-			'desc'           => __( 'Matters to the Appearance - Menus editor', 'groovy-menu' ),
-			'recommend_desc' => sprintf( __( 'Current Max input vars is OK, however %s is recommended for the correct operation of all the function.', 'groovy-menu' ), '1000' ),
+			'desc'           => esc_html__( 'Matters to the Appearance - Menus editor', 'groovy-menu' ),
+			'recommend_desc' => sprintf( esc_html__( 'Current Max input vars is OK, however %s is recommended for the correct operation of all the function.', 'groovy-menu' ), '1000' ),
 			'recommend'      => ( $php_max_input_vars >= 200 ) ? true : false, // minimum 200
 			'pass'           => ( $php_max_input_vars >= 1000 ) ? true : false, // minimum 1000
 		);

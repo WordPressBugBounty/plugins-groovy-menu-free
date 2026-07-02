@@ -4,11 +4,23 @@ global $groovyMenuSettings, $groovyMenuPreview;
 
 $groovyMenuPreview = true;
 
-$preset_id     = isset( $_GET['id'] ) ? esc_attr( sanitize_text_field( wp_unslash( $_GET['id'] ) ) ) : false; // @codingStandardsIgnoreLine
-$navmenu_id    = isset( $_GET['navmenu_id'] ) ? esc_attr( sanitize_text_field( wp_unslash( $_GET['navmenu_id'] ) ) ) : false; // @codingStandardsIgnoreLine
-$from_action   = isset( $_GET['from'] ) ? esc_attr( sanitize_text_field( wp_unslash( $_GET['from'] ) ) ) : null; // @codingStandardsIgnoreLine
-$rtl_flag      = isset( $_GET['d'] ) ? true : false; // @codingStandardsIgnoreLine
-$preset_params = empty( $_POST['menu'] ) ? array() : $_POST['menu']; // @codingStandardsIgnoreLine
+$preset_id     = isset( $_GET['id'] ) ? absint( wp_unslash( $_GET['id'] ) ) : false;
+$navmenu_id    = isset( $_GET['navmenu_id'] ) ? sanitize_text_field( wp_unslash( $_GET['navmenu_id'] ) ) : false;
+$from_action   = isset( $_GET['from'] ) ? sanitize_key( wp_unslash( $_GET['from'] ) ) : null;
+$rtl_flag      = isset( $_GET['d'] );
+$preset_params = array();
+
+if ( ! empty( $_POST ) ) {
+	if (
+		! current_user_can( 'groovy_menu_edit_preset' ) ||
+		! isset( $_POST['gm_nonce'] ) ||
+		! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['gm_nonce'] ) ), 'gm_nonce_preset_save' )
+	) {
+		wp_die( esc_html__( 'Security check failed.', 'groovy-menu' ) );
+	}
+
+	$preset_params = empty( $_POST['menu'] ) || ! is_array( $_POST['menu'] ) ? array() : wp_unslash( $_POST['menu'] );
+}
 $styles        = new GroovyMenuStyle( $preset_id );
 $settings      = new GroovyMenuSettings();
 
@@ -33,6 +45,10 @@ if ( 'api' === $from_action ) {
 	if ( ! empty( $preset_params ) && is_array( $preset_params ) ) {
 		foreach ( $preset_params as $group ) {
 			foreach ( $group as $key => $val ) {
+				$key = sanitize_key( $key );
+				if ( is_scalar( $val ) ) {
+					$val = sanitize_textarea_field( $val );
+				}
 				$styles->set( $key, $val );
 			}
 		}

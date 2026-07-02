@@ -1,10 +1,10 @@
-=== Wordpress Mega menu Plugin - Groovy Menu (Free) ===
+=== Groovy Menu Plugin (Free) ===
 Contributors: Grooni
 Tags: mega menu, megamenu, navigation, mobile menu, drop down, wpmenu, responsive, responsive menu, sticky menu, vertical menu, horizontal menu, ajax cart
 Requires at least: 4.9.7
-Tested up to: 6.1
+Tested up to: 7.0
 Requires PHP: 7.0
-Stable tag: 1.4.3
+Stable tag: 1.4.7
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.en.html
 
@@ -39,7 +39,7 @@ View more video tutorials: [Mega Menu Tutorials](https://www.youtube.com/channel
 * Full width mega menu
 * Mobile menu
 * Mega menu mobile
-* Mobile slide menu 
+* Mobile slide menu
 * Custom block in menu predefined areas (partially)
 * Multi-level menu support
 * Smooth scroll
@@ -59,7 +59,7 @@ View more video tutorials: [Mega Menu Tutorials](https://www.youtube.com/channel
 Elementor, DIVI, WPBakery
 * [Divi Mega menu](https://groovymenu.grooni.com/divi-mega-menu/)
 * Divi Fullwidth Module
-* Divi Regular Module 
+* Divi Regular Module
 * [Elementor Mega Menu](https://groovymenu.grooni.com/standard-wordpress-menu-plugin/)
 * WPBakery Mega Menu (ex Visual Composer)
 * Vertical menu
@@ -71,11 +71,11 @@ Elementor, DIVI, WPBakery
 * Sidebar menu
 * Expandable menu
 * Collapse sidebar menu
-* Secondary navigation bar 
-* Custom block in menu predefined areas 
-* Secondary navigation bar 
-* Additional sidebar menu 
-* Full width menu 
+* Secondary navigation bar
+* Custom block in menu predefined areas
+* Secondary navigation bar
+* Additional sidebar menu
+* Full width menu
 * Many header layouts
 * Online library preset
 * Premium Support
@@ -121,6 +121,30 @@ Please read [this](https://grooni.com/docs/groovy-menu/global-settings-2/logo-se
 == Additional Info ==
 The source code of the plugin can be found at [GitHub](https://github.com/grooni/groovy-wordpress-mega-menu-plugin)
 
+== Source and build ==
+The human-readable source code used to generate the JavaScript and CSS files in `assets/js` and `assets/style` is maintained at:
+https://github.com/grooni/groovy-wordpress-mega-menu-plugin
+
+Build steps:
+1. Clone the repository.
+2. Run `npm install`.
+3. Run `composer install`.
+4. Run `npm run gulp build --production` to rebuild JavaScript, CSS, images, and fonts from `src/`.
+5. Run `php build.php` to create `groovy-menu.zip`.
+
+The release package contains compiled assets for WordPress.org distribution. The source files and build configuration are available in the public repository above.
+
+== External services ==
+This plugin can connect to external services when the related feature is used.
+
+Google Fonts: this plugin loads selected fonts from `fonts.googleapis.com` and `fonts.gstatic.com` in the admin area and on the front end when Google Fonts are enabled. The requested font family, style, browser request data, and site visitor IP address may be sent to Google when the font CSS or font files are requested. Service provider: Google. Terms: https://policies.google.com/terms Privacy: https://policies.google.com/privacy
+
+Google Webfonts Helper: this plugin uses `google-webfonts-helper.herokuapp.com` to list Google Fonts metadata and download selected font files when the local Google Fonts feature is used by an administrator. The selected font family, variants, subsets, and requested font formats are sent in the request. Service provider: Google Webfonts Helper hosted on Heroku/Salesforce. Source: https://github.com/majodev/google-webfonts-helper Terms: https://www.salesforce.com/company/legal/sfdc-website-terms-of-service/ Privacy: https://www.salesforce.com/company/privacy/
+
+Grooni icon pack service: this plugin can connect to `license.grooni.com` to download optional icon packs when an administrator explicitly uses the icon pack installation feature. The requested icon pack name and standard request metadata may be sent. Service provider: Grooni. Terms: https://grooni.com/terms-and-conditions/ Privacy: https://grooni.com/privacy-policy/
+
+Grooni preset and theme integration services: this plugin can connect to `api.groovy.grooni.com` to fetch online preset library data and to `updates.grooni.com` to check available theme integration data when those admin features are used. The request can include the current theme name and preset identifier. Service provider: Grooni. Terms: https://grooni.com/terms-and-conditions/ Privacy: https://grooni.com/privacy-policy/
+
 == Screenshots ==
 1. Classic dropdown menu.
 2. Dashboard.
@@ -129,6 +153,26 @@ The source code of the plugin can be found at [GitHub](https://github.com/grooni
 5. Mega menu with menu blocks.
 
 == Changelog ==
+
+= 1.4.7 =
+* Fix: Removed remaining FREE-version runtime restrictions for built-in preset, import, duplicate, online library, taxonomy assignment, post-level preset, menu item option, header style, and hover style functionality.
+
+= 1.4.6 =
+* Fix: Removed trialware-style locked PRO preset actions and license registration flows from the FREE package.
+* Fix: Added stricter nonce and capability checks for preview, preset style saving, import/export-related actions, and dashboard settings.
+* Fix: Improved validation and sanitization for preview images, customizer data, taxonomy menu metadata, compiled CSS, and saved settings.
+* Fix: Improved escaping for debug output, textarea fields, icon modal HTML, and global settings tabs.
+* Fix: Replaced front-end request-level output buffering with wp_body_open based auto-integration output.
+
+= 1.4.5 =
+* Fix: Improved compatibility with WordPress 7.0 and newer debug behavior.
+* Fix: Moved translation loading and nav menu registration to safe WordPress hooks.
+* Fix: Replaced deprecated PHP string sanitization in virtual pages.
+* Fix: Sanitized nonce and request data handling in admin actions.
+* Fix: Escaped admin output, URLs, JSON attributes, and menu walker fields.
+* Fix: Returned an error response for failed nonce checks in AJAX settings saves.
+* Fix: Preserved Crane theme integration logic while moving translated labels to a safe hook.
+* Docs: Documented generated asset source, build steps, and external services.
 
 = 1.4.3 =
 * Fix: Minimalistic menu bug with submenu gap on iOS.

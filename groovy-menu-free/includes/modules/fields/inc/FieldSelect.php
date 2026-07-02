@@ -34,8 +34,8 @@ class FieldSelect extends \GroovyMenu\FieldField {
 					?>
 
 					<option
-						<?php echo ( is_array( $option ) and isset( $option['condition'] ) ) ? ' data-condition=\'' . wp_json_encode( $option['condition'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE ) . '\'' : ''; ?>
-						<?php echo ( is_array( $option ) and isset( $option['condition_type'] ) ) ? ' data-condition_type="' . $option['condition_type'] . '" ' : ''; ?>
+						<?php echo ( is_array( $option ) && isset( $option['condition'] ) ) ? ' data-condition=\'' . esc_attr( wp_json_encode( $option['condition'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE ) ) . '\'' : ''; ?>
+						<?php echo ( is_array( $option ) && isset( $option['condition_type'] ) ) ? ' data-condition_type="' . esc_attr( $option['condition_type'] ) . '" ' : ''; ?>
 						value="<?php echo esc_attr( $key ); ?>"
 						<?php echo ( strval( $this->getValue() ) === strval( $key ) ) ? 'selected' : ''; ?>
 					><?php echo esc_html( $optionName ); ?></option>

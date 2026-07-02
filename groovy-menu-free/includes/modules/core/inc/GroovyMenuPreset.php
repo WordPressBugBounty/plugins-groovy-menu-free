@@ -381,11 +381,6 @@ if ( ! class_exists( 'GroovyMenuPreset' ) ) {
 			} elseif ( $cache_enable && ! $key_value && ! empty( $cache['obj'] ) ) {
 				return $cache['obj'];
 			}
-			$lver = false;
-			if ( defined( 'GROOVY_MENU_LVER' ) && '2' === GROOVY_MENU_LVER ) {
-				$lver = true;
-			}
-
 			// get posts.
 			$args          = array(
 				'fields' => array( 'ID', 'post_title' ),
@@ -403,15 +398,11 @@ if ( ! class_exists( 'GroovyMenuPreset' ) ) {
 				$cache['key_value'][ strval( $preset->ID ) ] = $preset->post_title;
 
 				// as object.
-				$preset_obj       = new stdClass();
-				$preset_obj->id   = strval( $preset->ID );
-				$preset_obj->name = $preset->post_title;
-				$cache['obj'][]   = $preset_obj;
-
-				if ( $lver ) {
-					break;
+					$preset_obj       = new stdClass();
+					$preset_obj->id   = strval( $preset->ID );
+					$preset_obj->name = $preset->post_title;
+					$cache['obj'][]   = $preset_obj;
 				}
-			}
 
 			$presets = array();
 

@@ -95,25 +95,23 @@ class GroovyMenuSingleMetaPreset {
 
 		?>
 		<div class="groovy-meta-box-wrapper">
-			<?php if ( ! $this->lver ) { ?>
-				<div class="groovy-meta-box-item">
-					<div class="groovy-meta-box-item--label">
-						<label for="groovy-preset"><?php esc_html_e( 'Menu preset', 'groovy-menu' ); ?></label>
-					</div>
-					<div class="groovy-meta-box-item--select">
-						<select id="groovy-preset" name="<?php echo esc_attr( self::meta_name ); ?>"
-							class="groovy-select-maxwidth">
-							<option value=""><?php esc_html_e( 'Default', 'groovy-menu' ); ?></option>
-							<option
-								value="none" <?php echo ( ! empty( $saved_preset ) && $saved_preset === 'none' ) ? 'selected' : '' ?>><?php _e( 'Hide Groovy menu', 'groovy-menu' ); ?></option>
-							<?php foreach ( $presets as $preset ) { ?>
-								<option <?php echo ( ! empty( $saved_preset ) && $saved_preset === $preset->id ) ? 'selected' : '' ?>
-									value="<?php echo esc_attr( $preset->id ); ?>"><?php echo esc_html( $preset->name ); ?></option>
-							<?php } ?>
-						</select>
-					</div>
+			<div class="groovy-meta-box-item">
+				<div class="groovy-meta-box-item--label">
+					<label for="groovy-preset"><?php esc_html_e( 'Menu preset', 'groovy-menu' ); ?></label>
 				</div>
-			<?php } ?>
+				<div class="groovy-meta-box-item--select">
+					<select id="groovy-preset" name="<?php echo esc_attr( self::meta_name ); ?>"
+						class="groovy-select-maxwidth">
+						<option value=""><?php esc_html_e( 'Default', 'groovy-menu' ); ?></option>
+						<option
+							value="none" <?php echo ( ! empty( $saved_preset ) && $saved_preset === 'none' ) ? 'selected' : '' ?>><?php esc_html_e( 'Hide Groovy menu', 'groovy-menu' ); ?></option>
+						<?php foreach ( $presets as $preset ) { ?>
+							<option <?php echo ( ! empty( $saved_preset ) && $saved_preset === $preset->id ) ? 'selected' : '' ?>
+								value="<?php echo esc_attr( $preset->id ); ?>"><?php echo esc_html( $preset->name ); ?></option>
+						<?php } ?>
+					</select>
+				</div>
+			</div>
 			<div class="groovy-meta-box-item">
 				<div class="groovy-meta-box-item--label">
 					<label
@@ -150,7 +148,9 @@ class GroovyMenuSingleMetaPreset {
 		}
 
 		// don't save for Migration process.
-		if ( ! empty( $_GET['crane-theme-migrate-job'] ) || ! empty( $_GET['crane-theme-migrate'] ) || ( defined( 'CRANE_DOING_MIGRATE_JOB' ) && CRANE_DOING_MIGRATE_JOB ) ) { // @codingStandardsIgnoreLine
+		$crane_theme_migrate_job = ! empty( $_GET['crane-theme-migrate-job'] ) ? sanitize_key( wp_unslash( $_GET['crane-theme-migrate-job'] ) ) : '';
+		$crane_theme_migrate     = ! empty( $_GET['crane-theme-migrate'] ) ? sanitize_key( wp_unslash( $_GET['crane-theme-migrate'] ) ) : '';
+		if ( ! empty( $crane_theme_migrate_job ) || ! empty( $crane_theme_migrate ) || ( defined( 'CRANE_DOING_MIGRATE_JOB' ) && CRANE_DOING_MIGRATE_JOB ) ) {
 			return $post_id;
 		}
 
@@ -167,21 +167,24 @@ class GroovyMenuSingleMetaPreset {
 		}
 
 		// don't save for "Quick Edit".
-		if ( ! empty( $_POST['post_ID'] ) && isset( $_POST['action'] ) && 'inline-save' === $_POST['action'] ) {
+		$post_action = isset( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : '';
+		if ( ! empty( $_POST['post_ID'] ) && 'inline-save' === $post_action ) {
 			return $post_id;
 		}
 
 		// don't save for "Bulk Edit".
-		if ( isset( $_REQUEST['action'] ) && 'edit' === $_REQUEST['action'] && isset( $_REQUEST['post_status'] ) && 'all' === $_REQUEST['post_status'] && isset( $_REQUEST['bulk_edit'] ) ) { // @codingStandardsIgnoreLine
+		$request_action      = isset( $_REQUEST['action'] ) ? sanitize_key( wp_unslash( $_REQUEST['action'] ) ) : '';
+		$request_post_status = isset( $_REQUEST['post_status'] ) ? sanitize_key( wp_unslash( $_REQUEST['post_status'] ) ) : '';
+		if ( 'edit' === $request_action && 'all' === $request_post_status && isset( $_REQUEST['bulk_edit'] ) ) {
 			return $post_id;
 		}
 
-		$current_post_type = isset( $_POST['post_type'] ) ? wp_unslash( trim( $_POST['post_type'] ) ) : null;
+		$current_post_type = isset( $_POST['post_type'] ) ? sanitize_key( wp_unslash( $_POST['post_type'] ) ) : null;
 
 		// Check for elementor_ajax.
 		$elementor_ajax_post_id = false;
-		if ( $post_revision && ! empty( $_POST['editor_post_id'] ) && isset( $_POST['action'] ) && 'elementor_ajax' === $_POST['action'] ) {
-			$elementor_ajax_post_id = intval( $_POST['editor_post_id'] ) ? : false;
+		if ( $post_revision && ! empty( $_POST['editor_post_id'] ) && 'elementor_ajax' === $post_action ) {
+			$elementor_ajax_post_id = absint( wp_unslash( $_POST['editor_post_id'] ) ) ? : false;
 		}
 
 		// check permissions.
@@ -199,10 +202,10 @@ class GroovyMenuSingleMetaPreset {
 
 
 		$meta_preset_name = ( $this->show_meta_box ) ? self::meta_name : self::simple_meta_name;
-		$new_preset_value = isset( $_POST[ $meta_preset_name ] ) ? $_POST[ $meta_preset_name ] : '';
+		$new_preset_value = isset( $_POST[ $meta_preset_name ] ) ? sanitize_text_field( wp_unslash( $_POST[ $meta_preset_name ] ) ) : '';
 
 		$meta_menu_name = ( $this->show_meta_box ) ? self::meta_menu_name : self::simple_meta_menu_name;
-		$new_menu_value = isset( $_POST[ $meta_menu_name ] ) ? $_POST[ $meta_menu_name ] : '';
+		$new_menu_value = isset( $_POST[ $meta_menu_name ] ) ? sanitize_text_field( wp_unslash( $_POST[ $meta_menu_name ] ) ) : '';
 
 		// get GM meta for elementor_ajax.
 		if ( $post_revision && $elementor_ajax_post_id && $elementor_ajax_post_id !== $post_id ) {
@@ -219,8 +222,8 @@ class GroovyMenuSingleMetaPreset {
 		} else {
 
 			if (
-				! empty( $_POST['wp-preview'] ) && 'dopreview' === $_POST['wp-preview'] &&
-				! empty( $_POST['post_status'] ) && 'draft' === $_POST['post_status']
+				! empty( $_POST['wp-preview'] ) && 'dopreview' === sanitize_key( wp_unslash( $_POST['wp-preview'] ) ) &&
+				! empty( $_POST['post_status'] ) && 'draft' === sanitize_key( wp_unslash( $_POST['post_status'] ) )
 			) {
 				$post_revisions = wp_get_post_revisions( $post_id, array( 'numberposts' => 1 ) );
 
@@ -247,7 +250,7 @@ class GroovyMenuSingleMetaPreset {
 		if ( empty( $used_in_storage ) ) {
 			$used_in_storage = array();
 		}
-		$post_type = isset( $_POST['post_type'] ) ? esc_attr( wp_unslash( $_POST['post_type'] ) ) : '';
+		$post_type = isset( $_POST['post_type'] ) ? sanitize_key( wp_unslash( $_POST['post_type'] ) ) : '';
 
 		if ( empty( $post_type ) && ! $elementor_ajax_post_id ) {
 			return $post_id;

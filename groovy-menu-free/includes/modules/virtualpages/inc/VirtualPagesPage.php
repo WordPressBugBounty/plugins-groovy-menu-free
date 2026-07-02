@@ -34,7 +34,7 @@ class VirtualPagesPage implements VirtualPagesPageInterface {
 	}
 
 	function setTitle( $title ) {
-		$this->title = filter_var( $title, FILTER_SANITIZE_STRING );
+		$this->title = sanitize_text_field( $title );
 
 		return $this;
 	}

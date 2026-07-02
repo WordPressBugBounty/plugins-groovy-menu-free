@@ -38,14 +38,7 @@ class GroovyMenuCategoryPreset {
 			}
 		}
 
-		$lver = false;
-		if ( defined( 'GROOVY_MENU_LVER' ) && '2' === GROOVY_MENU_LVER ) {
-			$lver = true;
-		}
-
-		if ( ! $lver ) {
-			add_action( 'init', array( $this, 'init_taxonomies' ), 1010 ); // late init.
-		}
+		add_action( 'init', array( $this, 'init_taxonomies' ), 1010 ); // late init.
 	}
 
 	/**
@@ -134,7 +127,7 @@ class GroovyMenuCategoryPreset {
 		}
 
 		if ( isset( $_POST[ self::meta_name ] ) ) {
-			$preset = trim( $_POST[ self::meta_name ] );
+			$preset = sanitize_text_field( wp_unslash( $_POST[ self::meta_name ] ) );
 
 			update_term_meta( $term_id, self::meta_name, $preset );
 
@@ -151,7 +144,7 @@ class GroovyMenuCategoryPreset {
 		}
 
 		if ( isset( $_POST[ self::meta_menu_name ] ) ) {
-			$navMenu = trim( $_POST[ self::meta_menu_name ] );
+			$navMenu = sanitize_text_field( wp_unslash( $_POST[ self::meta_menu_name ] ) );
 
 			update_term_meta( $term_id, self::meta_menu_name, $navMenu );
 		}

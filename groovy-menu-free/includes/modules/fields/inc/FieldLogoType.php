@@ -16,7 +16,7 @@ class FieldLogoType extends \GroovyMenu\FieldField {
 			<?php foreach ( $this->field['options'] as $key => $option ) { ?>
 				<label
 					class="gm-gui__logotype<?php echo ( $this->getValue() === $key ) ? ' gm-gui__logotype--selected' : ''; ?>">
-					<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/logo-type-<?php echo esc_attr( $key ); ?>.png" alt="">
+					<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/logo-type-<?php echo esc_attr( $key ); ?>.png" alt="">
 					<input data-name="<?php echo esc_attr( $this->name ); ?>" type="radio"
 					       name="<?php echo esc_attr( $this->getName() ); ?>"
 					       value="<?php echo esc_attr( $key ); ?>" <?php echo ( $this->getValue() === $key ) ? 'checked' : ''; ?>>

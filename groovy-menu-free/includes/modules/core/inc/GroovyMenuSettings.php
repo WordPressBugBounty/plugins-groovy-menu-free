@@ -13,7 +13,7 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 
 		protected $lver = false;
 		protected $remote_child_themes_url = 'https://updates.grooni.com/theme-demos/gm-child-themes/config/';
-		protected $remote_get_msg_url = 'https://license.grooni.com/grooni-msg-spot/';
+		protected $remote_get_msg_url = '';
 
 		public function __construct() {
 
@@ -21,12 +21,15 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 				GroovyMenuRoleCapabilities::check_capabilities();
 			}
 
+			if ( defined( 'GROOVY_MENU_LVER' ) && '2' === GROOVY_MENU_LVER ) {
+				$this->lver = true;
+			}
+
 			$style = new GroovyMenuStyle();
 
 			add_action( 'wp_ajax_gm_save', array( $this, 'saveSettings' ) );
 
 			add_action( 'wp_ajax_gm_save_styles', array( $this, 'saveStyles' ) );
-			add_action( 'wp_ajax_nopriv_gm_save_styles', array( $this, 'saveStylesNoPriv' ) );
 
 			add_action( 'wp_ajax_gm_save_auto_integration', array( $this, 'saveAutoIntegration' ) );
 
@@ -35,8 +38,10 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 				'saveSingleLocationIntegration'
 			) );
 
-			add_action( 'wp_ajax_gm_check_current_license', array( $this, 'checkCurrentLicense' ) );
-			add_action( 'wp_ajax_gm_reload_current_license', array( $this, 'reloadCurrentLicense' ) );
+			if ( ! $this->lver ) {
+				add_action( 'wp_ajax_gm_check_current_license', array( $this, 'checkCurrentLicense' ) );
+				add_action( 'wp_ajax_gm_reload_current_license', array( $this, 'reloadCurrentLicense' ) );
+			}
 
 			add_action( 'wp_ajax_gm_get_setting', array( $this, 'getSettings' ) );
 			add_action( 'wp_ajax_nopriv_gm_get_setting', array( $this, 'getSettings' ) );
@@ -57,7 +62,9 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 			} else {
 				add_action( 'admin_head', array( $this, 'dismiss_notice_msg' ), 7 );
 				add_action( 'admin_head', array( $this, 'late_start' ), 8 );
-				add_action( 'admin_head', array( $this, 'grooni_msg' ), 9 );
+				if ( ! $this->lver ) {
+					add_action( 'admin_head', array( $this, 'grooni_msg' ), 9 );
+				}
 			}
 
 			if ( function_exists( 'wp_doing_ajax' ) && wp_doing_ajax() ) {
@@ -66,10 +73,6 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 					$this,
 					'gm_admin_walker_priority_change'
 				) );
-			}
-
-			if ( defined( 'GROOVY_MENU_LVER' ) && '2' === GROOVY_MENU_LVER ) {
-				$this->lver = true;
 			}
 
 			if ( $this->lver ) {
@@ -91,21 +94,21 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 		public function dismiss_notice_msg() {
 			if (
 				isset( $_GET['gm_nonce'] ) &&
-				wp_verify_nonce( $_GET['gm_nonce'], 'gm_nonce_dismiss_notice' ) &&
+				wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['gm_nonce'] ) ), 'gm_nonce_dismiss_notice' ) &&
 				isset( $_GET['gm-upgrade-theme'] ) &&
-				'yes' === $_GET['gm-upgrade-theme']
+				'yes' === sanitize_text_field( wp_unslash( $_GET['gm-upgrade-theme'] ) )
 			) {
 				update_user_meta( get_current_user_id(), 'gm-upgrade-theme', true );
 			}
 
 			if (
 				isset( $_GET['gm_nonce'] ) &&
-				wp_verify_nonce( $_GET['gm_nonce'], 'gm_nonce_dismiss_msg' ) &&
+				wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['gm_nonce'] ) ), 'gm_nonce_dismiss_msg' ) &&
 				isset( $_GET['gm-dismiss-msg'] ) &&
-				'yes' === $_GET['gm-dismiss-msg'] &&
+				'yes' === sanitize_text_field( wp_unslash( $_GET['gm-dismiss-msg'] ) ) &&
 				! empty( $_GET['gm-msg-id'] )
 			) {
-				update_user_meta( get_current_user_id(), 'gm-dismiss-msg-id--' . esc_attr( $_GET['gm-msg-id'] ), true );
+				update_user_meta( get_current_user_id(), 'gm-dismiss-msg-id--' . sanitize_key( wp_unslash( $_GET['gm-msg-id'] ) ), true );
 			}
 		}
 
@@ -275,8 +278,6 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 				'groovy-menu_page_groovy_menu_settings',
 				'groovy_menu_integration',
 				'groovy_menu_welcome',
-				'groovy_menu_license',
-				'groovy-menu_page_groovy_menu_license',
 				'tools_page_groovy_menu_debug_page',
 			);
 
@@ -326,32 +327,7 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 
 
 		public function show_gm_admin_need_license() {
-			?>
-
-			<div id="gm-need-license-notice" class="notice-error settings-error notice is-dismissible">
-				<div class="gm-notice-column-img">
-					<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/gm-notice-logo.png" alt="">
-				</div>
-				<div class="gm-notice-column-content">
-					<h2><?php esc_html_e( 'Need to register your copy of Groovy Menu plugin', 'groovy-menu' ) ?></h2>
-					<p class="gm-need-license-text-block"><?php echo sprintf(
-							esc_html__( 'This copy of Groovy Menu not registered. Please visit to %s page and activate the plugin.', 'groovy-menu' ), '<a href="' . get_admin_url( null, 'admin.php?page=groovy_menu_welcome', 'relative' ) . '">' . esc_html__( 'Welcome', 'groovy-menu' ) . '</a> ' ); ?>
-						<br>
-					</p>
-					<p class="gm-need-license-text-block">
-						<?php esc_html_e( 'Until you activate, features will not be available.', 'groovy-menu' ) ?>
-					</p>
-					<p class="gm-need-license-text-block gm-need-license-text-block--buttons">
-						<a href="<?php echo get_admin_url( null, 'admin.php?page=groovy_menu_welcome', 'relative' ); ?>"
-							class="button button-primary gm-notice-button gm-notice-button--blue"><?php esc_html_e( 'Register your copy of plugin', 'groovy-menu' ); ?></a>
-						<a href="https://grooni.ticksy.com/"
-							class="button button-secondary gm-notice-button gm-notice-button--grey"
-							target="_blank"><?php esc_html_e( 'Need help?', 'groovy-menu' ); ?></a>
-					</p>
-				</div>
-			</div>
-
-			<?php
+			return;
 		}
 
 
@@ -359,8 +335,8 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 			?>
 
 			<div id="gm-upgrade-notice" class="notice-error settings-error notice is-dismissible">
-				<p class="gm-install-addons-text-block"><?php echo sprintf(
-						esc_html__( 'You need to update %s. There are major improvements related to Groovy Menu settings.', 'groovy-menu' ), '<a href="' . get_admin_url( null, 'themes.php', 'relative' ) . '">' . esc_html__( 'Crane theme', 'groovy-menu' ) . '</a> ' ); ?>
+				<p class="gm-install-addons-text-block"><?php echo wp_kses_post( sprintf(
+						__( 'You need to update %s. There are major improvements related to Groovy Menu settings.', 'groovy-menu' ), '<a href="' . esc_url( get_admin_url( null, 'themes.php', 'relative' ) ) . '">' . esc_html__( 'Crane theme', 'groovy-menu' ) . '</a> ' ) ); ?>
 					<br>
 				</p>
 
@@ -409,16 +385,17 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 
 		public function gm_admin_walker_priority_change() {
 
-			if ( ! isset( $_POST['gm_nonce'] ) || ! wp_verify_nonce( $_POST['gm_nonce'], 'gm_nonce_priority_change' ) ) {
+			if ( ! isset( $_POST['gm_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['gm_nonce'] ) ), 'gm_nonce_priority_change' ) ) {
 				wp_die( wp_json_encode( array(
 					'code'    => 0,
 					'message' => esc_html__( 'Error. Nonce field outdated. Try reload page.', 'groovy-menu' ),
 				) ) );
 			}
 
+			$priority_action = isset( $_POST['do'] ) ? sanitize_key( wp_unslash( $_POST['do'] ) ) : '';
 			if (
-				! isset( $_POST['do'] ) ||
-				! in_array( $_POST['do'], [ 'add', 'remove' ], true )
+				! $priority_action ||
+				! in_array( $priority_action, [ 'add', 'remove' ], true )
 			) {
 				wp_die( wp_json_encode( array(
 					'code'    => 0,
@@ -429,7 +406,7 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 			$style           = new GroovyMenuStyle();
 			$global_settings = get_option( GroovyMenuStyle::OPTION_NAME );
 
-			if ( 'add' === $_POST['do'] ) {
+			if ( 'add' === $priority_action ) {
 				$global_settings['tools']['admin_walker_priority'] = '1';
 			} else {
 				$global_settings['tools']['admin_walker_priority'] = '';
@@ -448,45 +425,17 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 		}
 
 		public function start_ob() {
-			$actions = array(
-				'create',
-				'delete',
-				'saveDashboardSettings',
-				'defaultSet',
-				'rename',
-				'preview',
-				'deleteFont',
-				'setThumb',
-				'unsetThumb',
-			);
-			if ( ! $this->lver ) {
-				$actions[] = 'import';
-				$actions[] = 'importPreset';
-				$actions[] = 'importFromLibrary';
-				$actions[] = 'duplicate';
-			}
-
-			$do_ob = false;
-
-			if ( isset( $_FILES['import'] ) && isset( $_FILES['import']['tmp_name'] ) ) { // @codingStandardsIgnoreLine
-				$do_ob = true;
-			}
-			if ( ( isset( $_GET['action'] ) && in_array( $_GET['action'], $actions, true ) ) ) { // @codingStandardsIgnoreLine
-				$do_ob = true;
-			}
-
-			if ( ! isset( $_GET['page'] ) || 'groovy_menu_settings' !== isset( $_GET['page'] ) ) { // @codingStandardsIgnoreLine
-				$do_ob = false;
-			}
-
-			if ( $do_ob ) {
-				ob_start();
-			}
-
-			if ( isset( $_GET['export'] ) && isset( $_GET['page'] ) && 'groovy_menu_settings' === $_GET['page'] ) { // @codingStandardsIgnoreLine
+			$request_page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+			if ( isset( $_GET['export'] ) && 'groovy_menu_settings' === $request_page ) {
 				$this->export();
 			}
 
+		}
+
+		protected function cleanOutputBuffer() {
+			if ( ob_get_level() > 0 ) {
+				ob_clean();
+			}
 		}
 
 		/**
@@ -690,8 +639,8 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 		 * @return GroovyMenuStyle
 		 */
 		public function settings( $menu_id = null ) {
-			if ( is_null( $menu_id ) && isset( $_GET['id'] ) ) { // @codingStandardsIgnoreLine
-				$menu_id = esc_attr( $_GET['id'] ); // @codingStandardsIgnoreLine
+			if ( is_null( $menu_id ) && isset( $_GET['id'] ) ) {
+				$menu_id = absint( wp_unslash( $_GET['id'] ) );
 			}
 			if ( is_null( $this->settings ) ) {
 				$this->settings = new GroovyMenuStyle( $menu_id );
@@ -845,7 +794,7 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 
 		public function menus() {
 			?>
-			<script>window.location.href = '<?php echo admin_url( 'nav-menus.php' ); ?>';</script>
+			<script>window.location.href = '<?php echo esc_js( admin_url( 'nav-menus.php' ) ); ?>';</script>
 			<?php
 			exit;
 		}
@@ -868,16 +817,14 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 				'preview',
 				'deleteFont',
 				'setThumb',
-				'unsetThumb'
+				'unsetThumb',
+				'import',
+				'importPreset',
+				'importFromLibrary',
+				'duplicate',
 			);
-			if ( ! $this->lver ) {
-				$actions[] = 'import';
-				$actions[] = 'importPreset';
-				$actions[] = 'importFromLibrary';
-				$actions[] = 'duplicate';
-			}
 
-			$action = isset( $_GET['action'] ) ? $_GET['action'] : null; // @codingStandardsIgnoreLine
+			$action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : null;
 			if ( in_array( $action, $actions, true ) ) {
 				$this->$action();
 			} else {
@@ -886,7 +833,7 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 		}
 
 		public function create() {
-			if ( ! isset( $_GET['gm_nonce'] ) || ! wp_verify_nonce( $_GET['gm_nonce'], 'gm_nonce_editor' ) ) {
+			if ( ! isset( $_GET['gm_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['gm_nonce'] ) ), 'gm_nonce_editor' ) ) {
 				return;
 			}
 
@@ -908,47 +855,47 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 		}
 
 		public function setThumb() {
-			if ( ! isset( $_GET['gm_nonce'] ) || ! wp_verify_nonce( $_GET['gm_nonce'], 'gm_nonce_editor' ) ) {
+			if ( ! isset( $_GET['gm_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['gm_nonce'] ) ), 'gm_nonce_editor' ) ) {
 				return;
 			}
 
 			if ( GroovyMenuRoleCapabilities::presetEdit( true ) ) {
-				$id    = esc_attr( sanitize_text_field( wp_unslash( $_GET['id'] ) ) );
-				$image = esc_attr( sanitize_text_field( wp_unslash( $_GET['image'] ) ) );
+				$id    = isset( $_GET['id'] ) ? absint( wp_unslash( $_GET['id'] ) ) : 0;
+				$image = isset( $_GET['image'] ) ? esc_url_raw( wp_unslash( $_GET['image'] ) ) : '';
 
 				GroovyMenuPreset::setThumb( $id, $image );
 			}
 		}
 
 		public function unsetThumb() {
-			if ( ! isset( $_GET['gm_nonce'] ) || ! wp_verify_nonce( $_GET['gm_nonce'], 'gm_nonce_editor' ) ) {
+			if ( ! isset( $_GET['gm_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['gm_nonce'] ) ), 'gm_nonce_editor' ) ) {
 				return;
 			}
 
 			if ( GroovyMenuRoleCapabilities::presetEdit( true ) ) {
-				$id = esc_attr( sanitize_text_field( wp_unslash( $_GET['id'] ) ) );
+				$id = isset( $_GET['id'] ) ? absint( wp_unslash( $_GET['id'] ) ) : 0;
 				GroovyMenuPreset::setThumb( $id, null );
 			}
 		}
 
 		public function rename() {
-			if ( ! isset( $_GET['gm_nonce'] ) || ! wp_verify_nonce( $_GET['gm_nonce'], 'gm_nonce_editor' ) ) {
+			if ( ! isset( $_GET['gm_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['gm_nonce'] ) ), 'gm_nonce_editor' ) ) {
 				return;
 			}
 
 			if ( GroovyMenuRoleCapabilities::presetEdit( true ) ) {
-				$id   = esc_attr( sanitize_text_field( wp_unslash( $_GET['id'] ) ) );
-				$name = sanitize_text_field( wp_unslash( $_GET['name'] ) );
+				$id   = isset( $_GET['id'] ) ? absint( wp_unslash( $_GET['id'] ) ) : 0;
+				$name = isset( $_GET['name'] ) ? sanitize_text_field( wp_unslash( $_GET['name'] ) ) : '';
 				GroovyMenuPreset::rename( $id, $name );
 			}
 
-			ob_clean();
+			$this->cleanOutputBuffer();
 			exit;
 		}
 
 
 		public function preview() {
-			ob_clean();
+			$this->cleanOutputBuffer();
 
 			wp_enqueue_style( 'groovy-style', get_stylesheet_directory_uri() . '/assets/style/frontend.css', [], GROOVY_MENU_VERSION );
 			wp_style_add_data( 'groovy-style', 'rtl', 'replace' );
@@ -959,8 +906,16 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 
 
 		public function savePreviewImage() {
-			ob_clean();
+			$this->cleanOutputBuffer();
 			if ( isset( $_POST ) && isset( $_POST['image'] ) ) {
+				if (
+					! GroovyMenuRoleCapabilities::presetEdit( true ) ||
+					! isset( $_POST['gm_nonce'] ) ||
+					! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['gm_nonce'] ) ), 'gm_nonce_preset_save' )
+				) {
+					wp_die( esc_html__( 'Security check failed.', 'groovy-menu' ) );
+				}
+
 				global $gm_supported_module;
 				global $wp_filesystem;
 				if ( empty( $wp_filesystem ) ) {
@@ -975,8 +930,15 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 					}
 				}
 
-				$id    = esc_attr( sanitize_text_field( wp_unslash( $_GET['id'] ) ) );
-				$image = trim( $_POST['image'] );
+				$id    = isset( $_GET['id'] ) ? absint( wp_unslash( $_GET['id'] ) ) : 0;
+				$image = isset( $_POST['image'] ) && is_string( $_POST['image'] ) ? trim( wp_unslash( $_POST['image'] ) ) : '';
+				if ( empty( $id ) || ! preg_match( '#^data:image/png;base64,[A-Za-z0-9+/=]+$#', $image ) ) {
+					wp_die( esc_html__( 'Error. Bad preview image data.', 'groovy-menu' ) );
+				}
+				$data = base64_decode( preg_replace( '#^data:image/png;base64,#i', '', $image ), true );
+				if ( false === $data ) {
+					wp_die( esc_html__( 'Error. Bad preview image data.', 'groovy-menu' ) );
+				}
 
 				if ( empty( $wp_filesystem ) ) {
 
@@ -986,12 +948,11 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 
 					$upload_dir      = GroovyMenuUtils::getUploadDir();
 					$upload_uri      = GroovyMenuUtils::getUploadUri();
-					$upload_filename = 'preset_' . esc_attr( $_GET['id'] ) . '.png';
-					$data            = base64_decode( preg_replace( '#^data:image/\w+;base64,#i', '', $image ) );
+					$upload_filename = 'preset_' . $id . '.png';
 
 					$wp_filesystem->put_contents( $upload_dir . $upload_filename, $data, FS_CHMOD_FILE );
 
-					update_post_meta( intval( $id ), 'gm_preset_screenshot', $upload_uri . $upload_filename );
+					update_post_meta( intval( $id ), 'gm_preset_screenshot', esc_url_raw( $upload_uri . $upload_filename ) );
 
 				}
 
@@ -1002,12 +963,12 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 
 
 		public function defaultSet() {
-			if ( ! isset( $_GET['gm_nonce'] ) || ! wp_verify_nonce( $_GET['gm_nonce'], 'gm_nonce_editor' ) ) {
+			if ( ! isset( $_GET['gm_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['gm_nonce'] ) ), 'gm_nonce_editor' ) ) {
 				return;
 			}
 
 			if ( GroovyMenuRoleCapabilities::globalOptions( true ) ) {
-				$id = esc_attr( sanitize_text_field( wp_unslash( $_GET['id'] ) ) );
+				$id = isset( $_GET['id'] ) ? absint( wp_unslash( $_GET['id'] ) ) : 0;
 				GroovyMenuPreset::setDefaultPreset( $id );
 				$redirect_url = add_query_arg(
 					array( 'page' => 'groovy_menu_settings' ),
@@ -1022,12 +983,8 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 		public function saveDashboardSettings() {
 
 			// Security check.
-			if (
-				isset( $_GET['action'] ) &&
-				isset( $_GET['gm_nonce'] ) &&
-				$_GET['action'] === 'saveDashboardSettings' &&
-				! wp_verify_nonce( $_GET['gm_nonce'], 'gm_nonce_saveDashboardSettings' )
-			) {
+			$action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : '';
+			if ( 'saveDashboardSettings' === $action && ( ! isset( $_GET['gm_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['gm_nonce'] ) ), 'gm_nonce_saveDashboardSettings' ) ) ) {
 				echo esc_html__( 'Fail. Nonce field outdated. Try reload page.', 'groovy-menu' );
 				exit;
 			}
@@ -1058,57 +1015,60 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 							}
 						}
 						if ( empty( $wp_filesystem ) ) {
-							@ob_clean();
+							$this->cleanOutputBuffer();
 							echo esc_html__( 'Cannot start $wp_filesystem.', 'groovy-menu' );
 							exit;
 						}
 
-						$filename = get_attached_file( $_POST['icons'] );
-						$zip      = new ZipArchive();
-						if ( $zip->open( $filename ) ) {
-							$fonts = \GroovyMenu\FieldIcons::getFonts();
+							$icons_attachment_id = empty( $_POST['icons'] ) ? 0 : absint( wp_unslash( $_POST['icons'] ) );
+							$filename            = get_attached_file( $icons_attachment_id );
+							$zip                 = new ZipArchive();
+							if ( $filename && $zip->open( $filename ) ) {
+								$fonts = \GroovyMenu\FieldIcons::getFonts();
 
-							$selection     = $zip->getFromName( 'selection.json' );
-							$selectionData = json_decode( $selection, true );
-							$name          = empty( $_POST['gm-replace-field-name'] ) ? 'groovy-' . time() : esc_attr( $_POST['gm-replace-field-name'] );
+								$selection     = $zip->getFromName( 'selection.json' );
+								$selectionData = json_decode( $selection, true );
+								$name          = empty( $_POST['gm-replace-field-name'] ) ? 'groovy-' . time() : sanitize_file_name( wp_unslash( $_POST['gm-replace-field-name'] ) );
 
-							\GroovyMenuUtils::delete_icon_pack_files( $name );
+								\GroovyMenuUtils::delete_icon_pack_files( $name );
 
-							$fontFiles['woff'] = $zip->getFromName( 'fonts/' . $selectionData['metadata']['name'] . '.woff' );
-							$fontFiles['ttf']  = $zip->getFromName( 'fonts/' . $selectionData['metadata']['name'] . '.ttf' );
-							$fontFiles['svg']  = $zip->getFromName( 'fonts/' . $selectionData['metadata']['name'] . '.svg' );
-							$fontFiles['eot']  = $zip->getFromName( 'fonts/' . $selectionData['metadata']['name'] . '.eot' );
+								$fontFiles['woff'] = $zip->getFromName( 'fonts/' . $selectionData['metadata']['name'] . '.woff' );
+								$fontFiles['ttf']  = $zip->getFromName( 'fonts/' . $selectionData['metadata']['name'] . '.ttf' );
+								$fontFiles['svg']  = $zip->getFromName( 'fonts/' . $selectionData['metadata']['name'] . '.svg' );
+								$fontFiles['eot']  = $zip->getFromName( 'fonts/' . $selectionData['metadata']['name'] . '.eot' );
 
-							$dir = GroovyMenuUtils::getFontsDir();
+								$dir = GroovyMenuUtils::getFontsDir();
 
-							foreach ( $fontFiles as $font_type => $font_file ) {
-								if ( false !== $font_file ) {
-									$type         = esc_attr( $font_type );
-									$put_contents = $wp_filesystem->put_contents( $dir . $name . '.' . $type, $fontFiles[ $type ], FS_CHMOD_FILE );
+								foreach ( $fontFiles as $font_type => $font_file ) {
+									if ( false !== $font_file ) {
+										$type         = esc_attr( $font_type );
+										$put_contents = $wp_filesystem->put_contents( $dir . $name . '.' . $type, $fontFiles[ $type ], FS_CHMOD_FILE );
+									}
 								}
+
+								$generated_font_css = GroovyMenuUtils::generate_fonts_css( $name, $selectionData, $fontFiles );
+
+								$put_contents = $wp_filesystem->put_contents( $dir . $name . '.css', $generated_font_css['css'], FS_CHMOD_FILE );
+
+								$icons = array();
+								foreach ( $generated_font_css['data']['icons'] as $icon ) {
+									$icon_name = isset( $icon['gm-name'] ) ? $icon['gm-name'] : $icon['icon']['tags'][0];
+
+									$icons[] = array(
+										'name' => $icon_name,
+										'code' => $icon['properties']['code']
+									);
+								}
+								$fonts[ $name ] = array( 'icons' => $icons, 'name' => $selectionData['metadata']['name'] );
+								\GroovyMenu\FieldIcons::setFonts( $fonts );
 							}
-
-							$generated_font_css = GroovyMenuUtils::generate_fonts_css( $name, $selectionData, $fontFiles );
-
-							$put_contents = $wp_filesystem->put_contents( $dir . $name . '.css', $generated_font_css['css'], FS_CHMOD_FILE );
-
-							$icons = array();
-							foreach ( $generated_font_css['data']['icons'] as $icon ) {
-								$icon_name = isset( $icon['gm-name'] ) ? $icon['gm-name'] : $icon['icon']['tags'][0];
-
-								$icons[] = array(
-									'name' => $icon_name,
-									'code' => $icon['properties']['code']
-								);
-							}
-							$fonts[ $name ] = array( 'icons' => $icons, 'name' => $selectionData['metadata']['name'] );
-							\GroovyMenu\FieldIcons::setFonts( $fonts );
+						} else {
+							die( esc_html__( "Wasn't able to work with Zip Archive. Missing php-zip extension.", 'groovy-menu' ) );
 						}
-					} else {
-						die( esc_html__( "Wasn't able to work with Zip Archive. Missing php-zip extension.", 'groovy-menu' ) );
 					}
-				}
-				$this->settings()->updateGlobal( $_POST['menu'] );
+					$menu_settings = ( isset( $_POST['menu'] ) && is_array( $_POST['menu'] ) ) ? wp_unslash( $_POST['menu'] ) : array();
+					$menu_settings = map_deep( $menu_settings, 'sanitize_textarea_field' );
+					$this->settings()->updateGlobal( $menu_settings );
 
 				if ( function_exists( 'groovy_menu_check_gfonts_params' ) ) {
 					groovy_menu_check_gfonts_params();
@@ -1121,30 +1081,27 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 		}
 
 		public function deleteFont() {
-			if ( ! isset( $_GET['gm_nonce'] ) || ! wp_verify_nonce( $_GET['gm_nonce'], 'gm_nonce_editor' ) ) {
+			if ( ! isset( $_GET['gm_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['gm_nonce'] ) ), 'gm_nonce_editor' ) ) {
 				return;
 			}
 
 			if ( GroovyMenuRoleCapabilities::globalOptions( true ) ) {
+				$font_name = isset( $_GET['name'] ) ? sanitize_file_name( wp_unslash( $_GET['name'] ) ) : '';
 				$fonts = \GroovyMenu\FieldIcons::getFonts();
-				unset( $fonts[ esc_attr( $_GET['name'] ) ] );
+				unset( $fonts[ $font_name ] );
 				\GroovyMenu\FieldIcons::setFonts( $fonts );
-				\GroovyMenuUtils::delete_icon_pack_files( esc_attr( $_GET['name'] ) );
+				\GroovyMenuUtils::delete_icon_pack_files( $font_name );
 			}
 			exit;
 		}
 
 		public function duplicate() {
-			if ( ! isset( $_GET['gm_nonce'] ) || ! wp_verify_nonce( $_GET['gm_nonce'], 'gm_nonce_editor' ) ) {
-				return;
-			}
-
-			if ( $this->lver ) {
+			if ( ! isset( $_GET['gm_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['gm_nonce'] ) ), 'gm_nonce_editor' ) ) {
 				return;
 			}
 
 			if ( GroovyMenuRoleCapabilities::presetCreate( true ) ) {
-				$id = esc_attr( sanitize_text_field( wp_unslash( $_GET['id'] ) ) );
+				$id = isset( $_GET['id'] ) ? absint( wp_unslash( $_GET['id'] ) ) : 0;
 
 				$preset    = GroovyMenuPreset::getById( $id );
 				$newId     = GroovyMenuPreset::create( $preset->name . ' duplicated' );
@@ -1173,7 +1130,9 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 				return;
 			}
 
-			if ( isset( $_FILES['import'] ) && isset( $_FILES['import']['tmp_name'] ) ) {
+			$import_tmp_name = isset( $_FILES['import'] ) && isset( $_FILES['import']['tmp_name'] ) && is_string( $_FILES['import']['tmp_name'] ) ? sanitize_text_field( wp_unslash( $_FILES['import']['tmp_name'] ) ) : '';
+
+			if ( '' !== $import_tmp_name ) {
 				global $wp_filesystem;
 				if ( empty( $wp_filesystem ) ) {
 					$file_path = str_replace( array(
@@ -1188,10 +1147,10 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 				}
 				if ( empty( $wp_filesystem ) ) {
 					if ( function_exists( 'file_get_contents' ) ) {
-						$data = json_decode( file_get_contents( $_FILES['import']['tmp_name'] ), true );
+						$data = json_decode( file_get_contents( $import_tmp_name ), true );
 					}
 				} else {
-					$data = json_decode( $wp_filesystem->get_contents( $_FILES['import']['tmp_name'] ), true );
+					$data = json_decode( $wp_filesystem->get_contents( $import_tmp_name ), true );
 				}
 			}
 
@@ -1199,11 +1158,6 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 			if ( empty( $data ) || ! is_array( $data ) ) {
 				wp_die( esc_html__( 'Error. When get uploaded file. Or wrong file format.', 'groovy-menu' ) );
 			}
-			if ( $this->lver ) {
-				return;
-			}
-
-
 			if ( $exist_preset > 0 ) {
 				$presetId = $exist_preset;
 			} else {
@@ -1271,15 +1225,18 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 		 * @return null
 		 */
 		public function importPreset() {
+			if ( ! isset( $_GET['gm_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['gm_nonce'] ) ), 'gm_nonce_editor' ) ) {
+				return;
+			}
+
 			if ( ! GroovyMenuRoleCapabilities::canImport( true ) ) {
 				return;
 			}
 
-			if ( ! isset( $_GET['id'] ) || empty( $_GET['id'] ) ) {
+			$presetId = isset( $_GET['id'] ) ? absint( wp_unslash( $_GET['id'] ) ) : 0;
+			if ( empty( $presetId ) ) {
 				return;
 			}
-
-			$presetId = intval( esc_attr( $_GET['id'] ) );
 
 			if ( ! empty( $presetId ) ) {
 				self::import( $presetId );
@@ -1292,9 +1249,6 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 		 * @param $id
 		 */
 		public function importFromLibraryById( $id ) {
-			if ( $this->lver ) {
-				return;
-			}
 			if ( ! GroovyMenuRoleCapabilities::canImport( true ) ) {
 				return;
 			}
@@ -1318,14 +1272,15 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 		}
 
 		public function importFromLibrary() {
-			if ( $this->lver ) {
+			if ( ! isset( $_GET['gm_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['gm_nonce'] ) ), 'gm_nonce_editor' ) ) {
 				return;
 			}
+
 			if ( ! GroovyMenuRoleCapabilities::canImport( true ) ) {
 				return;
 			}
 
-			$id = esc_attr( sanitize_text_field( wp_unslash( $_GET['id'] ) ) );
+			$id = isset( $_GET['id'] ) ? absint( wp_unslash( $_GET['id'] ) ) : 0;
 
 			$preset = $this->getPresetsFromApiById( $id );
 			$data   = $this->getDataFromApi( $preset['url'] );
@@ -1362,12 +1317,12 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 		}
 
 		public function delete() {
-			if ( ! isset( $_GET['gm_nonce'] ) || ! wp_verify_nonce( $_GET['gm_nonce'], 'gm_nonce_editor' ) ) {
+			if ( ! isset( $_GET['gm_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['gm_nonce'] ) ), 'gm_nonce_editor' ) ) {
 				return;
 			}
 
 			if ( GroovyMenuRoleCapabilities::presetDelete( true ) ) {
-				$id = esc_attr( sanitize_text_field( wp_unslash( $_GET['id'] ) ) );
+				$id = isset( $_GET['id'] ) ? absint( wp_unslash( $_GET['id'] ) ) : 0;
 
 				GroovyMenuPreset::deleteById( $id, true );
 
@@ -1406,7 +1361,7 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 				<div class="gm-dashboard-header__logo">
 					<a
 						href="?page=groovy_menu_settings">
-						<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/groovy_doc_white.svg" alt="">
+						<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/groovy_doc_white.svg" alt="">
 					</a>
 				</div>
 				<div class="gm-dashboard-header__btn-group">
@@ -1433,624 +1388,12 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 
 
 		public function welcome_full() {
-
-			$lic_opt_old         = get_option( GROOVY_MENU_DB_VER_OPTION . '__lic' );
-			$lic_opt             = GroovyMenuUtils::check_lic();
-			$supported_until     = GroovyMenuUtils::check_lic_supported_until();
-			$supported_until_txt = $supported_until ? date( "F j, Y", $supported_until ) : '';
-			$purchase_key        = GroovyMenuUtils::get_paramlic( 'purchase_key' );
-
-			if ( ! empty( $purchase_key ) ) {
-				$half_key_count      = floor( strlen( $purchase_key ) / 2 );
-				$purchase_key_hidden = substr( $purchase_key, 0, $half_key_count ) . str_repeat( '*', $half_key_count );
-			}
-
-			if ( $lic_opt ) {
-				$lic_txt = '<span class="gm-lic-ok dashicons dashicons-yes-alt"></span>' . esc_html__( 'Plugin is registered!', 'groovy-menu' );
-			} else {
-				$lic_txt = '<span class="gm-lic-lock dashicons dashicons-lock"></span>' . esc_html__( 'Plugin is NOT registered!', 'groovy-menu' );
-			}
-
-			/**
-			 * Fires before the groovy menu welcome page output.
-			 *
-			 * @since 1.9.0
-			 */
-			do_action( 'gm_before_welcome_output' );
-
-			?>
-
-			<div class="gm-welcome-container gm-welcome-full">
-				<div class="gm-welcome-body">
-					<div class="gm-welcome-header">
-                    <span class="gm-welcome-header__logo">
-                      <img src="<?php echo GROOVY_MENU_URL; ?>assets/images/groovy-menu-repsonsive-logo.svg" alt="">
-	                    <span class="gm-welcome-header__subversion_full"><?php esc_html_e( 'premium version', 'groovy-menu' ); ?></span>
-                    </span>
-						<span class="gm-welcome-header__version"><?php echo GROOVY_MENU_VERSION; ?></span>
-					</div>
-					<div class="gm-welcome-top-block">
-						<div class="gm-welcome-top-block__txt">
-							<div class="gm-welcome-registered__txt<?php if ( ! $lic_opt ) {
-								echo ' gm-welcome-registered__lock';
-							} ?>">
-								<?php echo GroovyMenuUtils::clean_output( $lic_txt ); ?>
-							</div>
-							<?php if ( ! $lic_opt ) { ?>
-								<p class="gm-welcome-registered__p"><?php esc_html_e( 'You need to register your copy of Groovy Menu to activate the plugin features', 'groovy-menu' ); ?></p>
-								<p class="gm-welcome-registered__p"><?php esc_html_e( 'Need to register on URL', 'groovy-menu' ); ?>:<br>
-									<code><?php echo esc_url( get_site_url() ); ?></code></p>
-								<a class="gm-welcome-big-button gm-welcome-big-button--blue gm-welcome-tile__link--lic"
-									href="https://license.grooni.com/"
-									target="_blank"><?php esc_html_e( 'License site', 'groovy-menu' ); ?></a>
-								<span
-									class="gm-welcome-big-button gm-welcome-big-button--green gm-welcome-check--lic"><?php esc_html_e( 'Check license', 'groovy-menu' ); ?></span>
-							<?php } elseif ( $lic_opt && ! $lic_opt_old ) { ?>
-								<p class="gm-welcome-registered__p"><?php esc_html_e( 'A new license for current site is registered.', 'groovy-menu' ); ?></p>
-								<p class="gm-welcome-registered__p">
-									<strong><?php esc_html_e( 'Please, refresh the page.', 'groovy-menu' ); ?></strong>
-								</p>
-							<?php } elseif ( $lic_opt ) { ?>
-								<?php if ( ! empty( $purchase_key ) ) { ?>
-									<div class="gm-welcome-purchase-key--wrapper gm-welcome-grid-wrapper2-1">
-										<div
-											class="gm-welcome-purchase-key--hidden gm-welcome-grid"><?php echo GroovyMenuUtils::clean_output( $purchase_key_hidden ); ?></div>
-										<div class="gm-welcome-grid">
-											<div
-												class="gm-welcome-purchase-key gm-welcome-big-button gm-welcome-big-button--blue"><?php esc_html_e( 'Clipboard', 'groovy-menu' ) ?>
-												<div class="gm-welcome-purchase-key--container"
-													style="display:none;"><?php echo GroovyMenuUtils::clean_output( $purchase_key ); ?></div>
-											</div>
-										</div>
-									</div>
-								<?php } ?>
-								<a class="gm-welcome-simple-link gm-welcome-tile__link--lic"
-									href="https://license.grooni.com/"
-									target="_blank"><?php esc_html_e( 'Manage your license(s)', 'groovy-menu' ); ?></a>
-								<?php if ( ! $supported_until ) { ?>
-									<br>
-									<br>
-									<br>
-									<a class="gm-welcome-tile__link gm-welcome-tile__link--lic-reload"
-										href="#"><?php esc_html_e( 'Update licence data', 'groovy-menu' ); ?></a>
-								<?php } ?>
-							<?php } ?>
-						</div>
-						<div class="gm-welcome-top-block__img">
-							<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/laptop-with-bg.png" alt="">
-						</div>
-					</div>
-
-					<div class="gm-welcome-tabs">
-						<div class="gm-welcome-tab gm-welcome-tab__welcome gm-welcome-grid-wrapper2-1">
-
-							<div class="gm-welcome-grid">
-								<div class="gm-welcome-grid-wrapper2">
-									<div class="gm-welcome-grid gm-welcome-support__wrapper">
-										<div class="gm-welcome-support">
-											<h2><?php esc_html_e( 'Premium support', 'groovy-menu' ); ?></h2>
-											<?php if ( $supported_until ) { ?>
-												<p class="gm-welcome-support--active-text">
-													<span
-														class="dashicons dashicons-yes-alt"></span> <?php esc_html_e( 'Active', 'groovy-menu' ); ?>
-												</p>
-												<p><?php esc_html_e( 'Support is valid until', 'groovy-menu' ); ?>
-													<strong><?php echo GroovyMenuUtils::clean_output( $supported_until_txt ); ?></strong>
-												</p>
-
-											<?php } else { ?>
-
-												<p class="gm-welcome-support--expired-text">
-													<span
-														class="dashicons dashicons-no"></span> <?php esc_html_e( 'Expired', 'groovy-menu' ); ?>
-												</p>
-												<p><?php esc_html_e( 'Renew support to get help for 6 months', 'groovy-menu' ); ?></p>
-
-											<?php } ?>
-
-											<p class="gm-welcome-margintop">
-												<?php if ( $supported_until ) { ?>
-													<a class="gm-welcome-big-button gm-welcome-big-button--blue" href="https://grooni.ticksy.com/" target="_blank"><?php esc_html_e( 'Get support', 'groovy-menu' ); ?></a>
-												<?php } ?>
-												<?php if ( ! $supported_until ) { ?>
-													<a
-														class="gm-welcome-big-button gm-welcome-big-button--green gm-welcome-button--renew"
-														href="https://codecanyon.net/checkout/from_item/23049456?license=regular&size=source&support=renew_6month&ref=grooni"
-														target="_blank"><?php esc_html_e( 'Renew support', 'groovy-menu' ); ?></a>
-												<?php } ?>
-											</p>
-										</div>
-									</div>
-									<div class="gm-welcome-grid gm-welcome-integration__wrapper">
-										<div class="gm-welcome-integration">
-											<h2><?php esc_html_e( 'Help with integration', 'groovy-menu' ); ?></h2>
-											<p><?php esc_html_e( 'If automatic integration does not work properly, and for manual integration you do not have enough time and experience.', 'groovy-menu' ); ?></p>
-											<p class="gm-welcome-margintop"><a
-													class="gm-welcome-big-button gm-welcome-big-button--green"
-													href="https://gum.co/groovy-integration"
-													target="_blank"><?php esc_html_e( 'Manual integration', 'groovy-menu' ); ?> $35</a>
-											</p>
-										</div>
-									</div>
-								</div>
-								<div class="gm-welcome-buy-license-wrapper">
-									<div class="gm-welcome-notice gm-welcome-notice__important">
-										<div class="gm-welcome-tab__big-text">
-											<p>
-												<strong><?php esc_html_e( 'Buy new license', 'groovy-menu' ); ?></strong> - <?php esc_html_e( 'Starting a new project? Buy another license', 'groovy-menu' ); ?>
-											</p>
-										</div>
-										<p>
-											<strong><?php esc_html_e( 'Important!', 'groovy-menu' ); ?></strong> <?php esc_html_e( 'One standard license is valid only for', 'groovy-menu' ); ?>
-											<strong><?php esc_html_e( '1 website', 'groovy-menu' ); ?></strong>. <?php esc_html_e( 'Including multiple, you need to have own license on each individual site within your MultiSite installation organized on sub-domains.', 'groovy-menu' ); ?>
-										</p>
-										<p><?php esc_html_e( 'When moving a site from one domain to another please deregister the plugin first.', 'groovy-menu' ); ?></p>
-										<p class="gm-welcome-margintop"><a
-												class="gm-welcome-big-button gm-welcome-big-button--green"
-												href="https://1.envato.market/regular"
-												target="_blank"><?php esc_html_e( 'Purchase new license', 'groovy-menu' ); ?></a>
-										</p>
-									</div>
-								</div>
-							</div>
-
-							<div class="gm-welcome-grid gm-welcome-sysinfo__wrapper">
-								<div class="gm-welcome-sysinfo">
-									<h2><?php esc_html_e( 'System Status', 'groovy-menu' ); ?></h2>
-									<?php echo GroovyMenuUtils::get_environment_info( 'html' ); ?>
-								</div>
-							</div>
-
-						</div>
-					</div>
-
-					<div class="gm-welcome-tiles">
-						<div class="gm-welcome-tile">
-							<h2 class="gm-welcome-tile__title"><?php esc_html_e( 'First Steps', 'groovy-menu' ); ?></h2>
-							<p class="gm-welcome-tile__txt"><?php esc_html_e( 'To display the menu on the site, you need to add', 'groovy-menu' ); ?>
-								<a href="<?php echo admin_url( 'nav-menus.php' ) ?>"><?php esc_html_e( 'menu items', 'groovy-menu' ); ?></a>,
-								<?php esc_html_e( 'do the', 'groovy-menu' ); ?> <a
-									href="<?php echo admin_url( 'admin.php?page=groovy_menu_integration' ) ?>"><?php esc_html_e( 'integration', 'groovy-menu' ); ?></a>, <?php esc_html_e( 'and', 'groovy-menu' ); ?>
-								<a href="<?php echo admin_url( 'admin.php?page=groovy_menu_settings' ) ?>"><?php esc_html_e( 'upload the logo', 'groovy-menu' ); ?></a>. <?php esc_html_e( 'And', 'groovy-menu' ); ?> <?php esc_html_e( 'customize', 'groovy-menu' ); ?> <?php esc_html_e( 'the menu design for your taste', 'groovy-menu' ); ?>.
-							</p>
-							<a href="<?php echo admin_url( 'admin.php?page=groovy_menu_settings' ) ?>"
-								class="gm-welcome-tile__link"><?php esc_html_e( 'dashboard', 'groovy-menu' ); ?></a>
-						</div>
-						<div class="gm-welcome-tile">
-							<h2><?php esc_html_e( 'Integration', 'groovy-menu' ); ?></h2>
-							<p><?php esc_html_e( 'The automatic integration option is the easiest and in most cases the working way to implement Groovy Menu on your website...', 'groovy-menu' ); ?></p>
-							<a href="https://grooni.com/docs/groovy-menu/integration/" class="gm-welcome-tile__link"
-								target="_blank"><?php esc_html_e( 'READ MORE', 'groovy-menu' ); ?></a>
-						</div>
-						<div class="gm-welcome-tile">
-							<h2 class="gm-welcome-tile__title"><?php esc_html_e( 'Need help?', 'groovy-menu' ); ?></h2>
-							<p class="gm-welcome-tile__txt">
-								<?php esc_html_e( 'Our online', 'groovy-menu' ); ?>
-								<a target="_blank"
-									href="http://grooni.com/docs/groovy-menu/"><?php esc_html_e( 'documentation', 'groovy-menu' ); ?></a>
-								<?php esc_html_e( 'and', 'groovy-menu' ); ?>
-								<a target="_blank"
-									href="https://www.youtube.com/channel/UCpbGGAUnqSLwCAoNgm5uAKg"><?php esc_html_e( 'video tutorials', 'groovy-menu' ); ?></a>
-								<?php esc_html_e( 'consist of a lot of the most important information about the plugin settings.', 'groovy-menu' ); ?>
-							</p>
-							<div class="gm-welcome-tile__link-group">
-								<a href="https://grooni.com/docs/groovy-menu/"
-									class="gm-welcome-tile__link"><?php esc_html_e( 'MANUAL', 'groovy-menu' ); ?></a>
-								<a href="https://www.youtube.com/channel/UCpbGGAUnqSLwCAoNgm5uAKg"
-									class="gm-welcome-tile__link gm-welcome-tile__link--secondary-color"><?php esc_html_e( 'VIDEO', 'groovy-menu' );
-									?></a>
-							</div>
-						</div>
-					</div>
-
-				</div><!-- .gm-welcome-body -->
-			</div>
-
-
-			<?php
-
-			/**
-			 * Fires after the groovy menu welcome page output.
-			 *
-			 * @since 1.9.0
-			 */
-			do_action( 'gm_after_welcome_output' );
-
+			return $this->welcome_free();
 		}
 
 
 		public function welcome_ext() {
-
-			global $gm_supported_module;
-
-			$lic_opt = GroovyMenuUtils::check_lic();
-
-			if ( $lic_opt ) {
-				$lic_txt = '<span class="gm-lic-ok dashicons dashicons-yes-alt"></span>' . esc_html__( 'Plugin is registered!', 'groovy-menu' );
-			} else {
-				$lic_txt = '<span class="gm-lic-lock dashicons dashicons-lock"></span>' . esc_html__( 'Plugin is NOT registered!', 'groovy-menu' );
-			}
-
-			/**
-			 * Fires before the groovy menu welcome page output.
-			 *
-			 * @since 1.9.0
-			 */
-			do_action( 'gm_before_welcome_output' );
-
-			?>
-
-			<div class="gm-welcome-container gm-welcome-full gm-welcome-ext">
-				<div class="gm-welcome-body">
-					<div class="gm-welcome-header">
-                    <span class="gm-welcome-header__logo">
-                      <img src="<?php echo GROOVY_MENU_URL; ?>assets/images/groovy-menu-repsonsive-logo.svg" alt="">
-	                    <span
-		                    class="gm-welcome-header__subversion_full"><?php esc_html_e( 'premium version', 'groovy-menu' ); ?></span>
-                    </span>
-						<span class="gm-welcome-header__version"><?php echo GROOVY_MENU_VERSION; ?></span>
-					</div>
-					<div class="gm-welcome-top-block">
-						<div class="gm-welcome-top-block__txt">
-							<div class="gm-welcome-registered__txt">
-								<?php echo GroovyMenuUtils::clean_output( $lic_txt ); ?>
-							</div>
-							<?php if ( $lic_opt ) { ?>
-								<p class="gm-welcome-simple-text">
-									<?php esc_html_e( 'under the extended license for the template:', 'groovy-menu' ); ?>
-									<code><?php echo esc_attr( $gm_supported_module['theme'] ); ?></code>
-								</p>
-							<?php } ?>
-						</div>
-						<div class="gm-welcome-top-block__img">
-							<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/laptop-with-bg.png" alt="">
-						</div>
-					</div>
-
-					<div class="gm-welcome-tabs">
-						<div class="gm-welcome-tab gm-welcome-tab__welcome gm-welcome-grid-wrapper2-1">
-
-							<div class="gm-welcome-grid">
-								<div class="gm-welcome-buy-license-wrapper">
-									<div class="gm-welcome-notice gm-welcome-notice__important">
-										<div class="gm-welcome-tab__big-text">
-											<p>
-												<strong><?php esc_html_e( 'Buy new license', 'groovy-menu' ); ?></strong> - <?php esc_html_e( 'Starting a new project? Buy another license', 'groovy-menu' ); ?>
-											</p>
-										</div>
-										<p>
-											<strong><?php esc_html_e( 'Important!', 'groovy-menu' ); ?></strong> <?php esc_html_e( 'This license is registered for the current template.', 'groovy-menu' ); ?>
-										</p>
-										<p><?php esc_html_e( 'If you liked the plugin and want to install it on another template and use it separately, then you need to purchase a license.', 'groovy-menu' ); ?></p>
-										<p class="gm-welcome-margintop"><a
-												class="gm-welcome-big-button gm-welcome-big-button--green"
-												href="https://1.envato.market/regular"
-												target="_blank"><?php esc_html_e( 'Purchase new license', 'groovy-menu' ); ?></a>
-										</p>
-									</div>
-								</div>
-							</div>
-
-							<div class="gm-welcome-grid gm-welcome-sysinfo__wrapper">
-								<div class="gm-welcome-sysinfo">
-									<h2><?php esc_html_e( 'System Status', 'groovy-menu' ); ?></h2>
-									<?php echo GroovyMenuUtils::get_environment_info( 'html' ); ?>
-								</div>
-							</div>
-
-						</div>
-					</div>
-
-				</div><!-- .gm-welcome-body -->
-			</div>
-
-
-			<?php
-
-			/**
-			 * Fires after the groovy menu welcome page output.
-			 *
-			 * @since 1.9.0
-			 */
-			do_action( 'gm_after_welcome_output' );
-
-		}
-
-
-		public function dashboard() {
-			$presets  = GroovyMenuPreset::getAll();
-			$default  = GroovyMenuPreset::getDefaultPreset();
-			$gm_nonce = wp_create_nonce( 'gm_nonce_editor' );
-
-			/**
-			 * Fires before the groovy menu dashboard output.
-			 *
-			 * @since 1.2.20
-			 */
-			do_action( 'gm_before_dashboard_output' );
-
-			?>
-
-			<div class="gm-dashboard-container">
-				<?php $this->showDashboardHeader(); ?>
-				<div class="gm-dashboard-body">
-					<div class="gm-infobox gm-infobox-success gm-hidden">
-						<p class="gm-infobox__txt"><?php esc_html_e( 'Preset name saved', 'groovy-menu' ); ?></p>
-					</div>
-					<div class="gm-dashboard-body__title">
-						<h3 class="gm-dashboard-body__title__alpha"><?php esc_html_e( 'Menu presets', 'groovy-menu' ); ?></h3>
-					</div>
-					<input type="hidden" id="gm-nonce-editor-field" name="gm_nonce"
-						value="<?php echo esc_attr( $gm_nonce ); ?>">
-					<div class="gm-dashboard-body_inner">
-						<?php foreach ( $presets as $preset ) {
-
-							$needScreenshot = false;
-							$preview        = GroovyMenuPreset::getPreviewById( $preset->id );
-							if ( ! $preview ) {
-								$needScreenshot = true;
-								$preview        = GROOVY_MENU_URL . 'assets/images/blank.png';
-							}
-							$used_count = GroovyMenuUtils::get_preset_used_in_by_id( $preset->id, true );
-
-							?>
-
-							<div
-								class="preset<?php echo( $needScreenshot ? ' preset--need-screenshot' : '' ); ?><?php echo ( intval( $default ) == intval( $preset->id ) ) ? ' preset--default' : ''; ?>"
-								data-id="<?php echo esc_attr( $preset->id ); ?>"
-								data-name="<?php echo htmlspecialchars( $preset->name ); ?>">
-
-								<div class="preset-inner">
-									<a class="preset-placeholder"
-										href="?page=groovy_menu_settings&action=edit&id=<?php echo esc_attr( $preset->id ); ?>">
-										<img src="<?php echo esc_attr( $preview ); ?>"/>
-									</a>
-
-									<div class="preset-info">
-										<div class="preset-title">
-											<input
-												class="preset-title__input"
-												value="<?php echo esc_attr( $preset->name ); ?>"
-												readonly>
-										</div>
-										<div class="preset-options">
-											<i class="fa fa-chevron-down"></i>
-											<ul class="preset-opts__nav">
-												<?php if ( GroovyMenuRoleCapabilities::presetEdit( true ) ) : ?>
-													<li class="preset-opts__nav__item preset-rename">
-														<i class="fa fa-font"></i>
-														<span
-															class="preset-opts__nav__item__txt"><?php esc_html_e( 'Rename', 'groovy-menu' ); ?></span>
-													</li>
-												<?php endif; ?>
-												<?php if ( GroovyMenuRoleCapabilities::globalOptions( true ) && ! $this->lver ) : ?>
-													<li class="preset-opts__nav__item preset-set-default">
-														<i class="fa fa-thumb-tack"></i>
-														<span
-															class="preset-opts__nav__item__txt"><?php esc_html_e( 'Set as default', 'groovy-menu' ); ?></span>
-													</li>
-												<?php endif; ?>
-												<li class="preset-opts__nav__item preset-preview">
-													<i class="fa fa-search"></i>
-													<span
-														class="preset-opts__nav__item__txt"><?php esc_html_e( 'Preview', 'groovy-menu' ); ?></span>
-												</li>
-												<?php if ( GroovyMenuRoleCapabilities::presetCreate( true ) ) : ?>
-													<?php
-													if ( ! $this->lver && class_exists( '\GroovyMenu\Templates' ) ) {
-														\GroovyMenu\Templates::presetActionLiDublicate();
-													}
-													?>
-												<?php endif; ?>
-												<?php if ( GroovyMenuRoleCapabilities::canExport( true ) ) : ?>
-													<?php
-													if ( ! $this->lver && class_exists( '\GroovyMenu\Templates' ) ) {
-														\GroovyMenu\Templates::presetActionLiExport();
-													}
-													?>
-												<?php endif; ?>
-												<?php if ( GroovyMenuRoleCapabilities::canImport( true ) ) : ?>
-													<?php
-													if ( ! $this->lver && class_exists( '\GroovyMenu\Templates' ) ) {
-														\GroovyMenu\Templates::presetActionLiImport();
-													}
-													?>
-												<?php endif; ?>
-												<?php if ( ! GroovyMenuPreset::isPreviewThumb( $preset->id ) ) { ?>
-													<?php if ( GroovyMenuRoleCapabilities::presetEdit( true ) ) : ?>
-														<li class="preset-opts__nav__item preset-thumbnail">
-															<i class="fa fa-plus"></i>
-															<span
-																class="preset-opts__nav__item__txt"><?php esc_html_e( 'Set thumbnail', 'groovy-menu' ); ?></span>
-														</li>
-													<?php endif; ?>
-												<?php } else { ?>
-													<?php if ( GroovyMenuRoleCapabilities::presetEdit( true ) ) : ?>
-														<li class="preset-opts__nav__item preset-thumbnail-unset">
-															<i class="fa fa-times"></i>
-															<span
-																class="preset-opts__nav__item__txt"><?php esc_html_e( 'Unset thumbnail', 'groovy-menu' ); ?></span>
-														</li>
-													<?php endif; ?>
-												<?php } ?>
-												<?php
-												$used_text = '';
-												if ( $used_count ) {
-													$used_text = ' (' .
-													             sprintf( esc_html__( '%d uses', 'groovy-menu' ), $used_count ) .
-													             ')';
-												}
-												?>
-												<?php if ( GroovyMenuRoleCapabilities::presetDelete( true ) && ! $this->lver ) : ?>
-													<li class="preset-opts__nav__item preset-delete<?php if ( $used_text ) {
-														echo ' has-used-in-objects';
-													} ?>">
-														<i class="fa fa-times"></i>
-														<span
-															class="preset-opts__nav__item__txt"><?php esc_html_e( 'Delete', 'groovy-menu' ); ?><?php echo esc_js( $used_text ); ?></span>
-													</li>
-												<?php endif; ?>
-											</ul>
-										</div>
-									</div>
-								</div>
-							</div>
-						<?php } ?>
-
-						<?php if ( GroovyMenuRoleCapabilities::presetCreate( true ) ) : ?>
-
-							<?php if ( $this->lver ) : ?>
-								<div class="preset preset--create-new preset--only-in-pro">
-									<div class="preset-inner">
-										<div class="preset-placeholder">
-											<div class="preset-placeholder-inner">
-												<span class="gm-gui-icon gm-icon-list"></span>
-												<span
-													class="preset-title__alpha"><?php esc_html_e( 'CREATE NEW PRESET', 'groovy-menu' ); ?></span>
-												<span class="preset-title__alpha-sub">
-												<?php esc_html_e( 'Available in the', 'groovy-menu' ); ?>
-													<span><?php esc_html_e( 'PRO version', 'groovy-menu' ); ?></span>
-											</span>
-											</div>
-										</div>
-									</div>
-								</div>
-							<?php else: ?>
-								<?php
-								if ( ! $this->lver && class_exists( '\GroovyMenu\Templates' ) ) {
-									\GroovyMenu\Templates::presetNewDashboard();
-								}
-								?>
-							<?php endif; ?>
-						<?php endif; ?>
-
-						<?php if ( GroovyMenuRoleCapabilities::canImport( true ) ) : ?>
-							<?php if ( $this->lver ) : ?>
-								<div class="preset preset--import preset--only-in-pro">
-									<div class="preset-inner">
-										<div class="preset-placeholder">
-											<div class="preset-placeholder-inner">
-												<span class="gm-gui-icon gm-icon-download"></span>
-												<span class="preset-title__alpha">
-												<?php esc_html_e( 'IMPORT MENU PRESET', 'groovy-menu' ); ?>
-											</span>
-												<span class="preset-title__alpha-sub">
-												<?php esc_html_e( 'Available in the', 'groovy-menu' ); ?>
-													<span><?php esc_html_e( 'PRO version', 'groovy-menu' ); ?></span>
-											</span>
-											</div>
-										</div>
-									</div>
-								</div>
-							<?php else : ?>
-								<?php
-								if ( ! $this->lver && class_exists( '\GroovyMenu\Templates' ) ) {
-									\GroovyMenu\Templates::presetImportDashboard();
-								}
-								?>
-							<?php endif; ?>
-						<?php endif; ?>
-
-						<?php if ( GroovyMenuRoleCapabilities::canImport( true ) ) : ?>
-							<?php
-							$styles        = new GroovyMenuStyle();
-							$allow_library = $styles->getGlobal( 'tools', 'allow_import_online_library' ) ? : false;
-							$allow_library = $this->lver ? true : $allow_library;
-							?>
-
-							<div class="preset preset--add-template<?php if ( ! $allow_library ) : ?>
- preset--not-allowed<?php endif; ?><?php if ( $this->lver ) : ?>
- preset--only-in-pro<?php endif; ?>">
-								<div class="preset-inner">
-									<div class="preset-placeholder">
-										<div class="preset-placeholder-inner">
-											<span class="gm-gui-icon gm-icon-file-box"></span>
-											<span class="preset-title__alpha">
-                        <?php esc_html_e( 'Add preset from library', 'groovy-menu' ); ?>
-                        <?php if ( ! $allow_library ) : ?>
-	                        <?php if ( ! $this->lver ) {
-		                        echo '</span><span class="preset-title__alpha-sub">';
-		                        esc_html_e( 'To show presets from the online library, please enable toggle beside "Allow fetching presets from online library" placed in "Global Settings" at the "Tools" tab', 'groovy-menu' );
-		                        echo ' </span>';
-	                        } ?>
-                        <?php endif; ?>
-                        <?php
-                        if ( $this->lver ) {
-	                        echo '</span><span class="preset-title__alpha-sub">';
-	                        esc_html_e( 'Available in the', 'groovy-menu' );
-	                        echo ' <span>';
-	                        esc_html_e( 'PRO version', 'groovy-menu' );
-	                        echo ' </span>';
-                        }
-                        ?>
-									    </span>
-										</div>
-									</div>
-								</div>
-							</div>
-						<?php endif; ?>
-
-						<?php if ( $this->lver ) : ?>
-							<div class="preset preset-comparision">
-								<a href="<?php echo esc_url( 'https://groovymenu.grooni.com/upgrade/' ); ?>"
-									target="_blank">
-									<div class="preset-inner">
-										<div class="preset-placeholder">
-											<div class="preset-placeholder-inner">
-												<span class="gm-gui-icon gm-icon-crown"></span>
-												<span
-													class="preset-title__alpha"><?php esc_html_e( 'FREE VS Premium', 'groovy-menu' ); ?></span>
-												<span
-													class="preset-title__alpha-sub"><?php esc_html_e( 'Compare both plugins features', 'groovy-menu' ); ?></span>
-											</div>
-										</div>
-									</div>
-								</a>
-							</div>
-						<?php endif; ?>
-
-					</div>
-				</div>
-			</div>
-
-
-			<?php if ( GroovyMenuRoleCapabilities::canImport( true ) ) : ?>
-				<?php
-				if ( ! $this->lver && class_exists( '\GroovyMenu\Templates' ) ) {
-					\GroovyMenu\Templates::presetImportModal();
-				}
-				?>
-			<?php endif; ?>
-
-			<?php
-			if ( GroovyMenuRoleCapabilities::globalOptions( true ) ) {
-
-				$this->renderGlobalSettingModal();
-
-				echo GroovyMenuRenderIconsModal();
-
-			}
-			?>
-
-			<?php if ( GroovyMenuRoleCapabilities::canImport( true ) ) : ?>
-				<?php
-				if ( ! $this->lver && class_exists( '\GroovyMenu\Templates' ) ) {
-					\GroovyMenu\Templates::presetLibraryModal( $this->getPresetsFromApi() );
-				}
-				?>
-			<?php endif; ?>
-
-			<?php
-			echo GroovyMenuPreviewModal();
-
-
-			/**
-			 * Fires after the groovy menu dashboard output.
-			 *
-			 * @since 1.2.20
-			 */
-			do_action( 'gm_after_dashboard_output' );
-
+			return $this->welcome_free();
 		}
 
 
@@ -2068,36 +1411,36 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 				<div class="gm-welcome-body">
 					<div class="gm-welcome-header">
                     <span class="gm-welcome-header__logo">
-                      <img src="<?php echo GROOVY_MENU_URL; ?>assets/images/groovy-menu-repsonsive-logo.svg" alt="">
+                      <img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/groovy-menu-repsonsive-logo.svg" alt="">
                       <span><?php esc_html_e( 'free version', 'groovy-menu' ); ?></span>
                     </span>
 						<h1 class="gm-welcome-header__title">
 							<span><?php esc_html_e( 'Enjoying GROOVY?', 'groovy-menu' ); ?></span>
-							<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/5-stars.svg" alt=""><br>
+							<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/5-stars.svg" alt=""><br>
 							<?php esc_html_e( 'Why not leave a review on WordPress.org? We\'d really appreciate it.', 'groovy-menu' ); ?>
 						</h1>
-						<span class="gm-welcome-header__version"><?php echo GROOVY_MENU_VERSION; ?></span>
+							<span class="gm-welcome-header__version"><?php echo esc_html( GROOVY_MENU_VERSION ); ?></span>
 					</div>
 					<div class="gm-welcome-top-block">
 						<div class="gm-welcome-top-block__txt">
 							<h2><?php esc_html_e( 'Groovy Mega Menu!', 'groovy-menu' ); ?></h2>
-							<p><?php echo __( 'Thank you for choosing our plugin! Add an awesome mega menu on your site. Is an easy to customize, just need to upload your <br> logo and fit your own colors, fonts and sizes.', 'groovy-menu' ); ?></p>
+							<p><?php echo wp_kses_post( __( 'Thank you for choosing our plugin! Add an awesome mega menu on your site. Is an easy to customize, just need to upload your <br> logo and fit your own colors, fonts and sizes.', 'groovy-menu' ) ); ?></p>
 						</div>
 						<div class="gm-welcome-top-block__img">
-							<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/laptop-with-bg.png" alt="">
+							<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/laptop-with-bg.png" alt="">
 						</div>
 					</div>
 					<div class="gm-welcome-tiles">
 						<div class="gm-welcome-tile">
 							<h2 class="gm-welcome-tile__title"><?php esc_html_e( 'First Steps', 'groovy-menu' ); ?></h2>
 							<p class="gm-welcome-tile__txt"><?php esc_html_e( 'To display the menu on the site, you need to add', 'groovy-menu' ); ?>
-								<a href="<?php echo admin_url( 'nav-menus.php' ) ?>"><?php esc_html_e( 'menu items', 'groovy-menu' ); ?></a>,
+								<a href="<?php echo esc_url( admin_url( 'nav-menus.php' ) ); ?>"><?php esc_html_e( 'menu items', 'groovy-menu' ); ?></a>,
 								<?php esc_html_e( 'do the', 'groovy-menu' ); ?> <a
-									href="<?php echo admin_url( 'admin.php?page=groovy_menu_integration' ) ?>"><?php esc_html_e( 'integration', 'groovy-menu' ); ?></a>, <?php esc_html_e( 'and', 'groovy-menu' ); ?>
-								<a href="<?php echo admin_url( 'admin.php?page=groovy_menu_settings' ) ?>"><?php esc_html_e( 'upload the logo', 'groovy-menu' ); ?></a>. <?php esc_html_e( 'And', 'groovy-menu' ); ?>
-								<a href="<?php echo admin_url( 'customize.php' ) ?>"><?php esc_html_e( 'customize', 'groovy-menu' );
+									href="<?php echo esc_url( admin_url( 'admin.php?page=groovy_menu_integration' ) ); ?>"><?php esc_html_e( 'integration', 'groovy-menu' ); ?></a>, <?php esc_html_e( 'and', 'groovy-menu' ); ?>
+								<a href="<?php echo esc_url( admin_url( 'admin.php?page=groovy_menu_settings' ) ); ?>"><?php esc_html_e( 'upload the logo', 'groovy-menu' ); ?></a>. <?php esc_html_e( 'And', 'groovy-menu' ); ?>
+								<a href="<?php echo esc_url( admin_url( 'customize.php' ) ); ?>"><?php esc_html_e( 'customize', 'groovy-menu' );
 									?></a> <?php esc_html_e( 'the menu design for your taste', 'groovy-menu' ); ?> .</p>
-							<a href="<?php echo admin_url( 'admin.php?page=groovy_menu_settings' ) ?>"
+							<a href="<?php echo esc_url( admin_url( 'admin.php?page=groovy_menu_settings' ) ); ?>"
 								class="gm-welcome-tile__link"><?php esc_html_e( 'dashboard', 'groovy-menu' ); ?></a>
 						</div>
 						<div class="gm-welcome-tile">
@@ -2132,46 +1475,46 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 						<div class="gm-tuts-grid">
 							<a target="_blank" href="https://www.youtube.com/watch?v=w1SIBwMdfn8&t=7s" class="gm-tuts-grid-item
               gm-tuts-grid-item--xl">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/gmfree-howtoinstall.jpg" alt=""
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/gmfree-howtoinstall.jpg" alt=""
 									class="gm-tuts-grid-item__img">
 							</a>
 							<a target="_blank" href="https://www.youtube.com/watch?v=_f-11Ujp410"
 								class="gm-tuts-grid-item">
 								<img
-									src="<?php echo GROOVY_MENU_URL; ?>assets/images/youtube-gmfree-how-to-create-mega-menu.jpg"
+									src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/youtube-gmfree-how-to-create-mega-menu.jpg"
 									alt=""
 									class="gm-tuts-grid-item__img">
 							</a>
 							<a target="_blank" href="https://www.youtube.com/watch?v=LKSRL5TZkIU"
 								class="gm-tuts-grid-item">
 								<img
-									src="<?php echo GROOVY_MENU_URL; ?>assets/images/youtube-gmfree-hover-appearance-effects.jpg"
+									src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/youtube-gmfree-hover-appearance-effects.jpg"
 									alt=""
 									class="gm-tuts-grid-item__img">
 							</a>
 							<a target="_blank" href="https://www.youtube.com/watch?v=V5MaXJ0CMx4"
 								class="gm-tuts-grid-item">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/youtube-gmfree-fullwidth-menu.jpg"
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/youtube-gmfree-fullwidth-menu.jpg"
 									alt=""
 									class="gm-tuts-grid-item__img">
 							</a>
 							<a target="_blank" href="https://www.youtube.com/watch?v=jl34DRTw-9k"
 								class="gm-tuts-grid-item">
 								<img
-									src="<?php echo GROOVY_MENU_URL; ?>assets/images/youtube-gmfree-how-to-font-size-style.jpg"
+									src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/youtube-gmfree-how-to-font-size-style.jpg"
 									alt=""
 									class="gm-tuts-grid-item__img">
 							</a>
 							<a target="_blank" href="https://www.youtube.com/watch?v=AKzqxE9OTY0"
 								class="gm-tuts-grid-item">
 								<img
-									src="<?php echo GROOVY_MENU_URL; ?>assets/images/youtube-gmfree-how-to-change-colors.jpg"
+									src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/youtube-gmfree-how-to-change-colors.jpg"
 									alt=""
 									class="gm-tuts-grid-item__img">
 							</a>
 							<a target="_blank" href="https://www.youtube.com/watch?v=hIZ3uHaMZGA"
 								class="gm-tuts-grid-item">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/Layer_881.jpg" alt=""
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/Layer_881.jpg" alt=""
 									class="gm-tuts-grid-item__img">
 							</a>
 						</div>
@@ -2198,56 +1541,56 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 								<?php esc_html_e( 'Mega menu', 'groovy-menu' ); ?>
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__free">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__premium">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__feature">
 								<?php esc_html_e( 'Mega menu blocks', 'groovy-menu' ); ?>
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__free">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/no.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/no.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__premium">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__feature">
 								<?php esc_html_e( 'Sticky menu', 'groovy-menu' ); ?>
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__free">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/no.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/no.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__premium">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__feature">
 								<?php esc_html_e( 'Vertical menu', 'groovy-menu' ); ?>
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__free">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/no.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/no.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__premium">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__feature">
 								<?php esc_html_e( 'Icon menu', 'groovy-menu' ); ?>
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__free">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/no.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/no.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__premium">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__feature">
 								<?php esc_html_e( 'Minimal menu', 'groovy-menu' ); ?>
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__free">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/no.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/no.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__premium">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__feature">
 								<?php esc_html_e( 'Hovers', 'groovy-menu' ); ?>
@@ -2256,7 +1599,7 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 								<span><?php esc_html_e( 'Only 2 hover types', 'groovy-menu' ); ?></span>
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__premium">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__feature">
 								<?php esc_html_e( 'Logotypes', 'groovy-menu' ); ?>
@@ -2265,124 +1608,124 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 								<span><?php esc_html_e( 'Only 1 logo + mobile logo', 'groovy-menu' ); ?></span>
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__premium">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__feature">
 								<?php esc_html_e( 'Online presets library', 'groovy-menu' ); ?>
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__free">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/no.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/no.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__premium">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__feature">
 								<?php esc_html_e( 'Different menus types on the one site', 'groovy-menu' ); ?>
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__free">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/no.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/no.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__premium">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__feature">
 								<?php esc_html_e( 'Export/import of settings', 'groovy-menu' ); ?>
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__free">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/no.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/no.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__premium">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__feature">
 								<?php esc_html_e( 'Badges', 'groovy-menu' ); ?>
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__free">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/no.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/no.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__premium">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__feature">
 								<?php esc_html_e( 'WooCommerce integration', 'groovy-menu' ); ?>
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__free">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__premium">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__feature">
 								<?php esc_html_e( 'Google fonts', 'groovy-menu' ); ?>
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__free">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__premium">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__feature">
 								<?php esc_html_e( 'Search feature', 'groovy-menu' ); ?>
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__free">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__premium">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__feature">
 								<?php esc_html_e( 'Custom icons', 'groovy-menu' ); ?>
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__free">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__premium">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__feature">
 								<?php esc_html_e( 'Premium support', 'groovy-menu' ); ?>
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__free">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/no.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/no.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__premium">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__feature">
 								<?php esc_html_e( 'Automatic integration', 'groovy-menu' ); ?>
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__free">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__premium">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__feature">
 								<?php esc_html_e( 'Manual integration', 'groovy-menu' ); ?>
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__free">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__premium">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__feature">
 								<?php esc_html_e( 'Extended license', 'groovy-menu' ); ?>
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__free">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/no.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/no.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__premium">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__feature">
 								<?php esc_html_e( 'Set specific menu for the taxonomies', 'groovy-menu' ); ?>
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__free">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/no.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/no.svg" alt="">
 							</div>
 							<div class="gm-welcome-comparision-grid__item gm-welcome-comparision-grid__premium">
-								<img src="<?php echo GROOVY_MENU_URL; ?>assets/images/yes.svg" alt="">
+								<img src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/yes.svg" alt="">
 							</div>
 						</div>
 					</div>
@@ -2442,7 +1785,7 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 			$saved_auto_integration     = GroovyMenuUtils::getAutoIntegration();
 			$saved_location_integration = GroovyMenuUtils::getSingleLocationIntegration();
 
-			$admin_nav_menu_page = '<a href="' . admin_url( 'nav-menus.php?action=locations' ) . '">' . esc_html__( 'Manage Locations', 'groovy-menu' ) . '</a>';
+			$admin_nav_menu_page = '<a href="' . esc_url( admin_url( 'nav-menus.php?action=locations' ) ) . '">' . esc_html__( 'Manage Locations', 'groovy-menu' ) . '</a>';
 
 			//$pages_list = GroovyMenuUtils::getPagesList(); // TODO one page TEST-DEV mode
 
@@ -2470,7 +1813,7 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 							<div class="gm-dashboard-body-section gm-dashboard-body-section--divi">
 								<div class="gm-dashboard-body-block--left">
 									<img class="gm-gui-picture gm-gui-picture__integration"
-										src="<?php echo GROOVY_MENU_URL; ?>assets/images/integration.svg" alt="">
+										src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/integration.svg" alt="">
 								</div>
 								<div class="gm-dashboard-body-block--right">
 									<h3><?php esc_html_e( 'Integration for DIVI Theme', 'groovy-menu' ); ?></h3>
@@ -2495,7 +1838,7 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 							<div class="gm-dashboard-body-section gm-dashboard-body-section--child">
 								<div class="gm-dashboard-body-block--left">
 									<img class="gm-gui-picture gm-gui-picture__integration"
-										src="<?php echo GROOVY_MENU_URL; ?>assets/images/integration.svg" alt="">
+										src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/integration.svg" alt="">
 								</div>
 								<div class="gm-dashboard-body-block--right">
 									<h3><?php
@@ -2554,7 +1897,7 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 						<div class="gm-dashboard-body-section">
 							<div class="gm-dashboard-body-block--left">
 								<img class="gm-gui-picture gm-gui-picture__auto-integration"
-									src="<?php echo GROOVY_MENU_URL; ?>assets/images/auto-integration.svg" alt="">
+									src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/auto-integration.svg" alt="">
 							</div>
 							<div class="gm-dashboard-body-block--right">
 								<h3><?php esc_html_e( 'Automatic integration', 'groovy-menu' ); ?></h3>
@@ -2578,7 +1921,7 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 						<div class="gm-dashboard-body-section">
 							<div class="gm-dashboard-body-block--left">
 								<img class="gm-gui-picture gm-gui-picture__integration-location"
-									src="<?php echo GROOVY_MENU_URL; ?>assets/images/integration-location.svg" alt="">
+									src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/integration-location.svg" alt="">
 							</div>
 							<div class="gm-dashboard-body-block--right">
 								<h3><?php esc_html_e( 'Choose the location for the integration menu into pre-defined areas in your theme.', 'groovy-menu' ); ?></h3>
@@ -2609,7 +1952,7 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 										</select>
 									</label>
 								</p>
-								<p><?php esc_html_e( 'Note:', 'groovy-menu' ); ?><?php echo sprintf( __( 'Make sure the menu is assigned on the %s page. Otherwise, the location selection list will be empty.', 'groovy-menu' ), $admin_nav_menu_page ); ?><?php esc_html_e( 'Groovy menu Primary location will be ignored.', 'groovy-menu' ); ?><?php esc_html_e( 'The Groovy Menu Primary area will be ignored.', 'groovy-menu' ); ?></p>
+								<p><?php esc_html_e( 'Note:', 'groovy-menu' ); ?> <?php esc_html_e( 'Make sure the menu is assigned on the', 'groovy-menu' ); ?> <?php echo wp_kses_post( $admin_nav_menu_page ); ?> <?php esc_html_e( 'page. Otherwise, the location selection list will be empty.', 'groovy-menu' ); ?> <?php esc_html_e( 'Groovy menu Primary location will be ignored.', 'groovy-menu' ); ?> <?php esc_html_e( 'The Groovy Menu Primary area will be ignored.', 'groovy-menu' ); ?></p>
 								<p>
 									<button type="button"
 										class="btn gm-integration-button gm-integration-location-save">
@@ -2622,7 +1965,7 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 						<div class="gm-dashboard-body-section">
 							<div class="gm-dashboard-body-block--left">
 								<img class="gm-gui-picture gm-gui-picture__manual-integration"
-									src="<?php echo GROOVY_MENU_URL; ?>assets/images/manual-integration.svg" alt="">
+									src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/manual-integration.svg" alt="">
 							</div>
 							<div class="gm-dashboard-body-block--right">
 								<h3><?php esc_html_e( 'Manual integration', 'groovy-menu' ); ?></h3>
@@ -2648,7 +1991,7 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 							<div class="gm-dashboard-body-section">
 								<div class="gm-dashboard-body-block--left">
 									<img class="gm-gui-picture gm-gui-picture__need-integration"
-										src="<?php echo GROOVY_MENU_URL; ?>assets/images/need-integration.svg" alt="">
+										src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/need-integration.svg" alt="">
 								</div>
 								<div class="gm-dashboard-body-block--right">
 									<h3><?php esc_html_e( 'Need integration for your theme?', 'groovy-menu' ); ?></h3>
@@ -2665,7 +2008,7 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 						<div class="gm-dashboard-body-section">
 							<div class="gm-dashboard-body-block--left">
 								<img class="gm-gui-picture gm-gui-picture__shortcode-integration"
-									src="<?php echo GROOVY_MENU_URL; ?>assets/images/shortcode-integration.svg" alt="">
+									src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/shortcode-integration.svg" alt="">
 							</div>
 							<div class="gm-dashboard-body-block--right">
 								<h3><?php esc_html_e( 'Shortcode integration', 'groovy-menu' ); ?></h3>
@@ -2687,7 +2030,7 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 								<p><?php esc_html_e( 'Get stucked?', 'groovy-menu' ); ?>
 									<img
 										class="gm-gui-picture gm-gui-picture__need-help"
-										src="<?php echo GROOVY_MENU_URL; ?>assets/images/need-help.svg"
+										src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/need-help.svg"
 										alt="">
 									<?php
 									echo sprintf( esc_html__( 'Ask the %s team', 'groovy-menu' ),
@@ -2786,7 +2129,7 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 					<a href="?page=groovy_menu_settings">
 						<img
 							class="gm-gui__brand-logo"
-							src="<?php echo GROOVY_MENU_URL; ?>assets/images/groovy_doc_white.svg"
+							src="<?php echo esc_url( GROOVY_MENU_URL ); ?>assets/images/groovy_doc_white.svg"
 							alt="">
 					</a>
 				</div>
@@ -2800,7 +2143,7 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 					?>
 					<button class="gm-gui__restore-btn">
 						<span
-							class="gm-gui__nav-tabs__item__txt"><?php _e( 'Restore <br>Defaults', 'groovy-menu' ); ?></span>
+								class="gm-gui__nav-tabs__item__txt"><?php echo wp_kses_post( __( 'Restore <br>Defaults', 'groovy-menu' ) ); ?></span>
 					</button>
 				</ul>
 			</div>
@@ -2879,8 +2222,8 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 				<?php foreach ( $this->settings()->getGroups( $categoryName ) as $sublevelKey => $sublevel ) { ?>
 					<li class="gm-gui__nav-tabs__sublevel__item"
 						data-sublevel="<?php echo esc_attr( $sublevelKey ); ?>"
-						<?php echo ( isset( $sublevel['condition'] ) ) ? ' data-condition=\'' . wp_json_encode( $sublevel['condition'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE ) . '\'' : ''; ?>
-						<?php echo ( isset( $sublevel['condition_type'] ) ) ? ' data-condition_type="' . $sublevel['condition_type'] . '" ' : ''; ?>
+						<?php echo ( isset( $sublevel['condition'] ) ) ? ' data-condition=\'' . esc_attr( wp_json_encode( $sublevel['condition'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE ) ) . '\'' : ''; ?>
+						<?php echo ( isset( $sublevel['condition_type'] ) ) ? ' data-condition_type="' . esc_attr( $sublevel['condition_type'] ) . '" ' : ''; ?>
 					>
 						<span
 							class="gm-gui__nav-tabs__sublevel__item__anchor"><?php echo esc_html( $sublevel['title'] ); ?></span>
@@ -2973,9 +2316,10 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 		}
 
 		function getSettings() {
-			if ( defined( 'DOING_AJAX' ) && DOING_AJAX && ! empty( $_POST ) && isset( $_POST['action'] ) && $_POST['action'] === 'gm_get_setting' ) {
+			$action = isset( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : '';
+			if ( defined( 'DOING_AJAX' ) && DOING_AJAX && ! empty( $_POST ) && 'gm_get_setting' === $action ) {
 
-				$preset_id = empty( $_POST['preset_id'] ) ? '' : esc_attr( trim( $_POST['preset_id'] ) );
+				$preset_id = empty( $_POST['preset_id'] ) ? 0 : absint( wp_unslash( $_POST['preset_id'] ) );
 
 				if ( empty( $preset_id ) ) {
 					// Send a JSON response back to an AJAX request, and die().
@@ -2996,18 +2340,22 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 
 		function saveSettings() {
 
-			if ( ! isset( $_POST['gm_nonce'] ) || ! wp_verify_nonce( $_POST['gm_nonce'], 'gm_nonce_preset_save' ) ) {
+			if ( ! isset( $_POST['gm_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['gm_nonce'] ) ), 'gm_nonce_preset_save' ) ) {
 				// Send a JSON response back to an AJAX request, and die().
 				wp_send_json_error( esc_html__( 'Fail. Nonce field outdated. Try reload page.', 'groovy-menu' ) );
 			}
 
 			$cap_can = GroovyMenuRoleCapabilities::presetEdit( true );
 
-			if ( $cap_can && defined( 'DOING_AJAX' ) && DOING_AJAX && ! empty( $_POST ) && isset( $_POST['action'] ) && $_POST['action'] === 'gm_save' ) {
+			$action = isset( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : '';
+			if ( $cap_can && defined( 'DOING_AJAX' ) && DOING_AJAX && ! empty( $_POST ) && 'gm_save' === $action ) {
 
 				$ajax_data = [];
 
-				$ajax_data_raw = json_decode( stripslashes( $_POST['data'] ), true );
+				$ajax_data_raw = isset( $_POST['data'] ) && is_string( $_POST['data'] ) ? json_decode( wp_unslash( $_POST['data'] ), true ) : array();
+				if ( ! is_array( $ajax_data_raw ) ) {
+					$ajax_data_raw = array();
+				}
 				foreach ( $ajax_data_raw as $index => $item ) {
 					preg_match( '#^menu\[(\w+)\]\[(\w+)\]#', $index, $matches );
 					if ( empty( $matches ) || empty( $matches[1] ) || empty( $matches[2] ) ) {
@@ -3022,20 +2370,24 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 					wp_send_json_error( esc_html__( 'Error. Bad form data', 'groovy-menu' ) );
 				}
 
-				$referer_url = parse_url( $ajax_data['_wp_http_referer'] );
-				parse_str( $referer_url['query'], $referer_url );
+				$referer_raw   = isset( $ajax_data['_wp_http_referer'] ) && is_string( $ajax_data['_wp_http_referer'] ) ? $ajax_data['_wp_http_referer'] : '';
+				$referer_parts = $referer_raw ? wp_parse_url( $referer_raw ) : array();
+				$referer_query = isset( $referer_parts['query'] ) ? $referer_parts['query'] : '';
+				$referer_url   = array();
+				parse_str( $referer_query, $referer_url );
+				$preset_id     = isset( $referer_url['id'] ) ? absint( $referer_url['id'] ) : 0;
 
-				if ( empty( $referer_url ) || ! isset( $referer_url['id'] ) || ! $referer_url['id'] ) {
+				if ( ! $preset_id ) {
 					// Send a JSON response back to an AJAX request, and die().
 					wp_send_json_error( esc_html__( 'Error. Missing id of the current menu', 'groovy-menu' ) );
 				}
 
 				if ( isset( $ajax_data['groovy_menu_save_theme'] ) && $ajax_data['groovy_menu_save_theme'] === 'save' ) {
 
-					update_post_meta( intval( esc_attr( $referer_url['id'] ) ), 'gm_preset_screenshot', '' );
+					update_post_meta( $preset_id, 'gm_preset_screenshot', '' );
 
 					if ( ! empty( $ajax_data['menu'] ) && is_array( $ajax_data['menu'] ) ) {
-						$preset_settings = $this->settings( $referer_url['id'] )->getSettings();
+						$preset_settings = $this->settings( $preset_id )->getSettings();
 
 						foreach ( $ajax_data['menu'] as $group => $group_data ) {
 							foreach ( $group_data as $option => $value ) {
@@ -3054,12 +2406,13 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 						}
 					}
 
-					$this->settings( $referer_url['id'] )->update( $ajax_data['menu'] );
+					$this->settings( $preset_id )->update( $ajax_data['menu'] );
 
 					// Answer by default.
 					$respond = esc_html__( 'Save', 'groovy-menu' );
-					if ( ! empty( $_POST['sub_action'] ) ) {
-						switch ( $_POST['sub_action'] ) {
+					$sub_action = isset( $_POST['sub_action'] ) ? sanitize_key( wp_unslash( $_POST['sub_action'] ) ) : '';
+					if ( ! empty( $sub_action ) ) {
+						switch ( $sub_action ) {
 							case 'save':
 								$respond = esc_html__( 'Save', 'groovy-menu' );
 								break;
@@ -3092,16 +2445,20 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 		function saveStyles( $check_ver = false ) {
 			$cap_can = true;
 
-			if ( ! isset( $_POST['gm_nonce'] ) || ! wp_verify_nonce( $_POST['gm_nonce'], 'gm_nonce_preset_save' ) ) {
+			if ( ! isset( $_POST['gm_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['gm_nonce'] ) ), 'gm_nonce_preset_save' ) ) {
+				$cap_can = false;
+			}
+			if ( ! GroovyMenuRoleCapabilities::presetEdit( true ) ) {
 				$cap_can = false;
 			}
 
-			if ( $cap_can && defined( 'DOING_AJAX' ) && DOING_AJAX && ! empty( $_POST ) && isset( $_POST['action'] ) && $_POST['action'] === 'gm_save_styles' ) {
+			$action = isset( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : '';
+			if ( $cap_can && defined( 'DOING_AJAX' ) && DOING_AJAX && ! empty( $_POST ) && 'gm_save_styles' === $action ) {
 
-				$ajax_data  = empty( $_POST['data'] ) ? '' : trim( $_POST['data'] );
-				$direction  = empty( $_POST['direction'] ) ? '' : trim( $_POST['direction'] );
-				$preset_id  = empty( $_POST['preset_id'] ) ? '' : trim( $_POST['preset_id'] );
-				$gm_version = empty( $_POST['gm_version'] ) ? '' : trim( $_POST['gm_version'] );
+				$ajax_data  = ( isset( $_POST['data'] ) && is_string( $_POST['data'] ) ) ? sanitize_textarea_field( wp_unslash( $_POST['data'] ) ) : '';
+				$direction  = ( isset( $_POST['direction'] ) && is_string( $_POST['direction'] ) ) ? sanitize_key( wp_unslash( $_POST['direction'] ) ) : '';
+				$preset_id  = empty( $_POST['preset_id'] ) ? 0 : absint( wp_unslash( $_POST['preset_id'] ) );
+				$gm_version = ( isset( $_POST['gm_version'] ) && is_string( $_POST['gm_version'] ) ) ? sanitize_text_field( wp_unslash( $_POST['gm_version'] ) ) : '';
 
 				$direction_postfix = ( 'rtl' === $direction ) ? '_rtl' : '';
 
@@ -3150,8 +2507,9 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 				$this->save_compiled_css( $preset_id, $ajax_data, $direction );
 
 				$respond = esc_html__( 'Save', 'groovy-menu' );
-				if ( ! empty( $_POST['sub_action'] ) ) {
-					switch ( $_POST['sub_action'] ) {
+				$sub_action = isset( $_POST['sub_action'] ) ? sanitize_key( wp_unslash( $_POST['sub_action'] ) ) : '';
+				if ( ! empty( $sub_action ) ) {
+					switch ( $sub_action ) {
 						case 'save':
 							$respond = esc_html__( 'Saved', 'groovy-menu' );
 							break;
@@ -3241,19 +2599,21 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 
 		public function saveAutoIntegration() {
 
-			if ( ! isset( $_POST['gm_nonce'] ) || ! wp_verify_nonce( $_POST['gm_nonce'], 'gm_nonce_auto_integration' ) ) {
+			if ( ! isset( $_POST['gm_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['gm_nonce'] ) ), 'gm_nonce_auto_integration' ) ) {
 				$respond = esc_html__( 'Fail. Nonce field outdated. Try reload page.', 'groovy-menu' );
 				// Send a JSON response back to an AJAX request, and die().
-				wp_send_json_success( $respond );
+				wp_send_json_error( $respond );
 			}
 
 			if ( ! GroovyMenuRoleCapabilities::globalOptions( true ) ) {
 				return;
 			}
 
-			if ( defined( 'DOING_AJAX' ) && DOING_AJAX && ! empty( $_POST ) && isset( $_POST['action'] ) && $_POST['action'] === 'gm_save_auto_integration' ) {
+			$action = isset( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : '';
+			if ( defined( 'DOING_AJAX' ) && DOING_AJAX && ! empty( $_POST ) && 'gm_save_auto_integration' === $action ) {
 
-				$ajax_data = ( empty( $_POST['data'] ) || 'false' === $_POST['data'] ) ? false : true;
+				$posted_data = ( isset( $_POST['data'] ) && is_scalar( $_POST['data'] ) ) ? sanitize_text_field( wp_unslash( (string) $_POST['data'] ) ) : '';
+				$ajax_data   = ( '' === $posted_data || 'false' === $posted_data ) ? false : true;
 
 				global $gm_supported_module;
 				$theme_name = empty( $gm_supported_module['theme'] ) ? wp_get_theme()->get_template() : $gm_supported_module['theme'];
@@ -3270,13 +2630,19 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 		}
 
 		public function saveSingleLocationIntegration() {
+			if ( ! isset( $_POST['gm_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['gm_nonce'] ) ), 'gm_nonce_auto_integration' ) ) {
+				$respond = esc_html__( 'Fail. Nonce field outdated. Try reload page.', 'groovy-menu' );
+				wp_send_json_error( $respond );
+			}
+
 			if ( ! GroovyMenuRoleCapabilities::globalOptions( true ) ) {
 				return;
 			}
 
-			if ( defined( 'DOING_AJAX' ) && DOING_AJAX && ! empty( $_POST ) && isset( $_POST['action'] ) && $_POST['action'] === 'gm_save_single_location_integration' ) {
+			$action = isset( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : '';
+			if ( defined( 'DOING_AJAX' ) && DOING_AJAX && ! empty( $_POST ) && 'gm_save_single_location_integration' === $action ) {
 
-				$ajax_data = ( empty( $_POST['data'] ) || '' === $_POST['data'] ) ? '' : esc_attr( $_POST['data'] );
+				$ajax_data = ( isset( $_POST['data'] ) && is_string( $_POST['data'] ) ) ? sanitize_key( wp_unslash( $_POST['data'] ) ) : '';
 
 				global $gm_supported_module;
 				$theme_name = empty( $gm_supported_module['theme'] ) ? wp_get_theme()->get_template() : $gm_supported_module['theme'];
@@ -3311,7 +2677,8 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 			// By default.
 			$respond = 'none';
 
-			if ( defined( 'DOING_AJAX' ) && DOING_AJAX && ! empty( $_POST ) && isset( $_POST['action'] ) && $_POST['action'] === 'gm_check_current_license' ) {
+			$action = isset( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : '';
+			if ( defined( 'DOING_AJAX' ) && DOING_AJAX && ! empty( $_POST ) && 'gm_check_current_license' === $action ) {
 
 				$lic_opt = GroovyMenuUtils::check_lic( true );
 
@@ -3332,7 +2699,8 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 			// By default.
 			$respond = 'none';
 
-			if ( defined( 'DOING_AJAX' ) && DOING_AJAX && ! empty( $_POST ) && isset( $_POST['action'] ) && $_POST['action'] === 'gm_reload_current_license' ) {
+			$action = isset( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : '';
+			if ( defined( 'DOING_AJAX' ) && DOING_AJAX && ! empty( $_POST ) && 'gm_reload_current_license' === $action ) {
 
 				$lic_opt = GroovyMenuUtils::check_lic( true, true );
 
@@ -3355,7 +2723,8 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 		 */
 		public function getGoogleFonts() {
 
-			if ( defined( 'DOING_AJAX' ) && DOING_AJAX && ! empty( $_POST ) && isset( $_POST['action'] ) && $_POST['action'] === 'gm_get_google_fonts' ) {
+			$action = isset( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : '';
+			if ( defined( 'DOING_AJAX' ) && DOING_AJAX && ! empty( $_POST ) && 'gm_get_google_fonts' === $action ) {
 
 				$googleFonts = include GROOVY_MENU_DIR . 'includes' . DIRECTORY_SEPARATOR . 'fonts-google.php';
 
@@ -3366,12 +2735,18 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 		}
 
 		public function export() {
-			if ( GroovyMenuRoleCapabilities::canExport( true ) && isset( $_GET['export'] ) && ! $this->lver && ! empty( $_GET['id'] ) ) {
+			$export_id = isset( $_GET['id'] ) ? absint( wp_unslash( $_GET['id'] ) ) : 0;
+			$export_requested = isset( $_GET['export'] ) ? sanitize_key( wp_unslash( $_GET['export'] ) ) : '';
+			if ( ! isset( $_GET['gm_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['gm_nonce'] ) ), 'gm_nonce_editor' ) ) {
+				return;
+			}
+
+			if ( GroovyMenuRoleCapabilities::canExport( true ) && ! empty( $export_requested ) && ! empty( $export_id ) ) {
 
 				$export = array();
 
-				$export['settings'] = $this->settings()->getSettingsArray( true );
-				$export['name']     = $this->settings()->getPreset()->getName();
+				$export['settings'] = $this->settings( $export_id )->getSettingsArray( true );
+				$export['name']     = $this->settings( $export_id )->getPreset()->getName();
 				//$export['img']    = GroovyMenuPreset::getPreviewById( $this->settings()->getPreset()->getId() );
 				$export['name'] = empty( $export['name'] ) ? 'groovy menu preset' : $export['name'];
 				$preset_name    = str_replace( ' ', '-', $export['name'] );
@@ -3395,7 +2770,7 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 				}
 
 				if ( ! headers_sent() ) {
-					ob_clean();
+					$this->cleanOutputBuffer();
 
 					header( 'Content-Type: text/json' );
 					header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
@@ -3404,13 +2779,13 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 					exit;
 				} else { // Fallback
 					echo '<h1>';
-					echo __( 'The error of creating an export file!', 'groovy-menu' );
+					echo esc_html__( 'The error of creating an export file!', 'groovy-menu' );
 					echo '</h1><h2>';
-					echo __( 'Below is the contents of the text from the file. Copy the code and save it as a text file.', 'groovy-menu' );
+					echo esc_html__( 'Below is the contents of the text from the file. Copy the code and save it as a text file.', 'groovy-menu' );
 					echo '</h2>';
-					echo '<p>' . __( 'Suggested file name', 'groovy-menu' ) . ': <code>' . GroovyMenuUtils::clean_output( $filename ) . '</code></p>';
+					echo '<p>' . esc_html__( 'Suggested file name', 'groovy-menu' ) . ': <code>' . esc_html( $filename ) . '</code></p>';
 					echo '<textarea cols="80" rows="24" autofocus>';
-					echo wp_json_encode( $export, JSON_PRETTY_PRINT );
+					echo esc_textarea( wp_json_encode( $export, JSON_PRETTY_PRINT ) );
 					echo '</textarea>';
 					exit;
 				}
@@ -3424,7 +2799,8 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 			$first = true;
 			echo '<div class="groovy-tabs">';
 			foreach ( $settings as $categoryName => $category ) {
-				echo '<a href="#" data-tab="' . $categoryName . '" class="groovy-tab ' . ( $first ? 'groovy-tab-active' : '' ) . '">' . $category['title'] . '</a>';
+				$category_title = isset( $category['title'] ) ? $category['title'] : $categoryName;
+				echo '<a href="#" data-tab="' . esc_attr( $categoryName ) . '" class="groovy-tab ' . ( $first ? 'groovy-tab-active' : '' ) . '">' . esc_html( $category_title ) . '</a>';
 				$first = false;
 			}
 			echo '</div>';
@@ -3436,7 +2812,7 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 		 * @param $active
 		 */
 		protected function renderTabGlobal( $category, $categoryName, $active ) {
-			echo '<div class="groovy-tab-pane ' . ( $active ? 'groovy-tab-pane-active' : '' ) . '" id="groovy-tab-' . $categoryName . '">';
+			echo '<div class="groovy-tab-pane ' . ( $active ? 'groovy-tab-pane-active' : '' ) . '" id="groovy-tab-' . esc_attr( $categoryName ) . '">';
 			foreach ( $category['fields'] as $name => $field ) {
 				$this->renderField( $categoryName, $name, $field );
 			}
@@ -3447,10 +2823,6 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 		 * @return array
 		 */
 		protected function getPresetsFromApi() {
-			if ( $this->lver ) {
-				return array();
-			}
-
 			$styles        = new GroovyMenuStyle();
 			$allow_library = $styles->getGlobal( 'tools', 'allow_import_online_library' ) ? : false;
 			if ( ! $allow_library ) {
@@ -3485,9 +2857,6 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 		 * @return array|mixed
 		 */
 		protected function getPresetsFromApiById( $id ) {
-			if ( $this->lver ) {
-				return array();
-			}
 			$presets = $this->getPresetsFromApi();
 			$preset  = array();
 

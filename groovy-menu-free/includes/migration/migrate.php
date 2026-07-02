@@ -590,7 +590,7 @@ function gm_force_update_db_version() {
 
 	if ( ! empty( $_GET['gm-groovy-menu-db-version'] ) && ! empty( $_GET['gm-force-update'] ) ) { // @codingStandardsIgnoreLine
 		$migration = new GM_Migration();
-		$version   = esc_attr( wp_unslash( $_GET['gm-groovy-menu-db-version'] ) ); // @codingStandardsIgnoreLine
+		$version   = sanitize_text_field( wp_unslash( $_GET['gm-groovy-menu-db-version'] ) ); // @codingStandardsIgnoreLine
 		$migration->update_db_version( $version );
 
 		gm_debug_message( sprintf( esc_html__( 'FORCE WRITE. New DB version: %s', 'groovy-menu' ), $version ) );

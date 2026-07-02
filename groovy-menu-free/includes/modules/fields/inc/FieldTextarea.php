@@ -48,7 +48,7 @@ class FieldTextarea extends \GroovyMenu\FieldField {
 
 		?>
 		<div class="gm-gui__module__ui gm-gui__module__text-wrapper<?php echo esc_attr( $additional_class ); ?>">
-			<textarea data-name="<?php echo esc_attr( $this->name ); ?>" name="<?php echo esc_attr( $this->getName() ); ?>" <?php echo $additioonal_attr_escaped; ?> data-default="<?php echo esc_attr( $this->getDefault() ); ?>" <?php echo $lang_type_escaped; ?>><?php echo stripslashes( $this->getValue() ); ?></textarea>
+			<textarea data-name="<?php echo esc_attr( $this->name ); ?>" name="<?php echo esc_attr( $this->getName() ); ?>" <?php echo $additioonal_attr_escaped; ?> data-default="<?php echo esc_attr( $this->getDefault() ); ?>" <?php echo $lang_type_escaped; ?>><?php echo esc_textarea( stripslashes( $this->getValue() ) ); ?></textarea>
 		</div>
 		<?php
 	}

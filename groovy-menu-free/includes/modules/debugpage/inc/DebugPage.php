@@ -62,13 +62,13 @@ class DebugPage {
 		?>
 		<div class="gm-debug-section">
 			<?php if ( ! empty( $title ) ): ?>
-				<h3 class="gm-debug-section-title"><?php echo sprintf( '%s', $title ); ?></h3>
+				<h3 class="gm-debug-section-title"><?php echo esc_html( $title ); ?></h3>
 			<?php endif; ?>
 			<?php if ( ! empty( $decription ) ): ?>
-				<div class="gm-debug-section-desc"><?php echo sprintf( '%s', $decription ); ?></div>
+				<div class="gm-debug-section-desc"><?php echo wp_kses_post( $decription ); ?></div>
 			<?php endif; ?>
 			<?php if ( ! empty( $content ) ): ?>
-				<div class="gm-debug-section-content"><?php echo sprintf( '%s', $content ); ?></div>
+				<div class="gm-debug-section-content"><?php echo wp_kses_post( $content ); ?></div>
 			<?php endif; ?>
 		</div>
 		<?php

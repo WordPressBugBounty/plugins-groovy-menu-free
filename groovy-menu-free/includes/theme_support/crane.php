@@ -4,6 +4,20 @@ global $gm_supported_module;
 if ( 'crane' === $gm_supported_module['theme'] ) {
 	$gm_supported_module['GroovyMenuSingleMetaPreset'] = true;
 	$gm_supported_module['GroovyMenuShowIntegration']  = false;
+	$gm_supported_module['activate'][]   = 'gm_activate_action_for_crane_theme';
+	$gm_supported_module['deactivate'][] = 'gm_deactivate_action_for_crane_theme';
+	$gm_supported_module['check_update'] = true;
+
+	add_action( 'init', 'gm_register_crane_translated_labels', 1 );
+
+}
+
+function gm_register_crane_translated_labels() {
+	global $gm_supported_module;
+
+	if ( empty( $gm_supported_module['theme'] ) || 'crane' !== $gm_supported_module['theme'] ) {
+		return;
+	}
 
 	$support_post_types = array(
 		'crane_portfolio' => esc_html__( 'Portfolios', 'groovy-menu' ),
@@ -20,11 +34,6 @@ if ( 'crane' === $gm_supported_module['theme'] ) {
 			'condition' => array( 'search_form', 'in', array( 'fullscreen', 'dropdown-without-ajax' ) ),
 		),
 	);
-
-	$gm_supported_module['activate'][]   = 'gm_activate_action_for_crane_theme';
-	$gm_supported_module['deactivate'][] = 'gm_deactivate_action_for_crane_theme';
-	$gm_supported_module['check_update'] = true;
-
 }
 
 function gm_activate_action_for_crane_theme() {
@@ -110,13 +119,19 @@ function gm_save_redux_options( $_options ) {
 				$image_thumb = [ '', '', '' ];
 			}
 
-			\Redux::setOption( 'crane_options', 'favicon', [
+			$favicon_option = [
 				'url'       => isset( $image_full[0] ) ? $image_full[0] : '',
 				'id'        => $favicon_arr['id'],
 				'height'    => isset( $image_full[2] ) ? strval( $image_full[2] ) : '',
 				'width'     => isset( $image_full[1] ) ? strval( $image_full[1] ) : '',
 				'thumbnail' => isset( $image_thumb[0] ) ? $image_thumb[0] : '',
-			] );
+			];
+
+			if ( method_exists( '\Redux', 'set_option' ) ) {
+				\Redux::set_option( 'crane_options', 'favicon', $favicon_option );
+			} elseif ( method_exists( '\Redux', 'setOption' ) ) {
+				\Redux::setOption( 'crane_options', 'favicon', $favicon_option );
+			}
 
 			update_option( 'site_icon', $favicon_arr['id'] );
 		}
@@ -268,4 +283,3 @@ if ( ! function_exists( 'gm_debug_value' ) ) {
 		$auto_append = true;
 	}
 }
-

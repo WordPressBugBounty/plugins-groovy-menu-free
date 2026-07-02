@@ -20,19 +20,11 @@ class WalkerHelper extends WalkerNavMenu {
 	 */
 	public function __construct() {
 
-		$lic_opt = get_option( GROOVY_MENU_DB_VER_OPTION . '__lic' );
-		$lver    = false;
-		if ( defined( 'GROOVY_MENU_LVER' ) && '2' === GROOVY_MENU_LVER ) {
-			$lver = true;
-		}
+			// Save navigation menu item options.
+			add_action( 'wp_ajax_gm_save_menu_item_options', array( $this, 'save_menu_item_options' ) );
 
-		// Save navigation menu item options.
-		add_action( 'wp_ajax_gm_save_menu_item_options', array( $this, 'save_menu_item_options' ) );
-
-		if ( $lic_opt || $lver ) {
 			// Add the menu style button to the menu fields.
 			add_action( 'wp_nav_menu_item_custom_fields', array( $this, 'add_menu_button_fields' ), 10, 4 );
-		}
 
 	}
 
@@ -148,12 +140,7 @@ class WalkerHelper extends WalkerNavMenu {
 
 		if ( ! empty( $options ) && is_array( $options ) ) {
 
-			$lver = false;
-			if ( defined( 'GROOVY_MENU_LVER' ) && '2' === GROOVY_MENU_LVER ) {
-				$lver = true;
-			}
-
-			foreach ( $options as $field ) {
+				foreach ( $options as $field ) {
 
 				$field = $this->check_defaults( $field );
 
@@ -167,12 +154,7 @@ class WalkerHelper extends WalkerNavMenu {
 					$post_type_allowed = false;
 				}
 
-				$lver_allowed = false;
-				if ( ! $lver || $field['lver'] ) {
-					$lver_allowed = true;
-				}
-
-				if ( $depth_allowed && $post_type_allowed && $lver_allowed ) {
+					if ( $depth_allowed && $post_type_allowed ) {
 					switch ( $field['type'] ) {
 
 						case 'text':
@@ -715,16 +697,15 @@ class WalkerHelper extends WalkerNavMenu {
 	function save_menu_item_options() {
 		$cap_can = true;
 
-		if ( ! isset( $_POST['gm_nonce'] ) || ! wp_verify_nonce( $_POST['gm_nonce'], 'gm_nonce_menu_item_save' ) ) { // @codingStandardsIgnoreLine
+		if ( ! isset( $_POST['gm_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['gm_nonce'] ) ), 'gm_nonce_menu_item_save' ) ) {
 			$cap_can = false;
 		}
 
-		if ( $cap_can && defined( 'DOING_AJAX' ) && DOING_AJAX && ! empty( $_POST ) && isset( $_POST['action'] ) && $_POST['action'] === 'gm_save_menu_item_options' ) { // @codingStandardsIgnoreLine
+		$action = isset( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : '';
+		if ( $cap_can && defined( 'DOING_AJAX' ) && DOING_AJAX && ! empty( $_POST ) && 'gm_save_menu_item_options' === $action ) {
 
-			// @codingStandardsIgnoreStart
-			$item_id      = empty( $_POST['item_id'] ) ? '' : trim( $_POST['item_id'] );
-			$ajax_options = ( empty( $_POST['options'] ) || ! is_string( $_POST['options'] ) ) ? '' : trim( $_POST['options'] );
-			// @codingStandardsIgnoreEnd
+			$item_id      = empty( $_POST['item_id'] ) ? 0 : absint( wp_unslash( $_POST['item_id'] ) );
+			$ajax_options = ( empty( $_POST['options'] ) || ! is_string( $_POST['options'] ) ) ? '' : trim( wp_unslash( $_POST['options'] ) );
 
 			$parsed_options = array();
 			$ajax_options   = json_decode( stripslashes( $ajax_options ), true );

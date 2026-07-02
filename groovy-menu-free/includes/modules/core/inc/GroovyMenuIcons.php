@@ -10,14 +10,18 @@ function GroovyMenuRenderIconsModal() {
 	$lang['Close']       = esc_html__( 'Close', 'groovy-menu' );
 
 	foreach ( \GroovyMenu\FieldIcons::getFonts() as $fontName => $font ) {
+		$font_slug = sanitize_html_class( $fontName );
+		$font_name = isset( $font['name'] ) ? sanitize_text_field( $font['name'] ) : $font_slug;
 		$icons .= '
-<div class="groovy-iconset" data-name="' . $fontName . '">
-	<span class="groovy-iconset-name">' . $font['name'] . ' (' . $fontName . ')</span>
+<div class="groovy-iconset" data-name="' . esc_attr( $font_slug ) . '">
+	<span class="groovy-iconset-name">' . esc_html( $font_name ) . ' (' . esc_html( $font_slug ) . ')</span>
 	<div class="groovy-icons">
 ';
 
 		foreach ( $font['icons'] as $icon ) {
-			$icons .= '<span class="groovy-icon ' . $fontName . '-' . $icon['name'] . '" data-class="' . $fontName . '-' . $icon['name'] . '"></span>';
+			$icon_name  = isset( $icon['name'] ) ? sanitize_html_class( $icon['name'] ) : '';
+			$icon_class = $font_slug . '-' . $icon_name;
+			$icons     .= '<span class="groovy-icon ' . esc_attr( $icon_class ) . '" data-class="' . esc_attr( $icon_class ) . '"></span>';
 		}
 		$icons .= '</div></div>';
 	}
