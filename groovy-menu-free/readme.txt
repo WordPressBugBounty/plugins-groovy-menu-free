@@ -1,10 +1,10 @@
 === Groovy Menu Plugin (Free) ===
 Contributors: Grooni
-Tags: mega menu, megamenu, navigation, mobile menu, drop down, wpmenu, responsive, responsive menu, sticky menu, vertical menu, horizontal menu, ajax cart
+Tags: mega menu, responsive menu, sticky menu, drop down, ajax cart
 Requires at least: 4.9.7
 Tested up to: 7.0
 Requires PHP: 7.0
-Stable tag: 1.4.7
+Stable tag: 1.4.8
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.en.html
 
@@ -153,6 +153,12 @@ Grooni preset and theme integration services: this plugin can connect to `api.gr
 5. Mega menu with menu blocks.
 
 == Changelog ==
+
+= 1.4.8 =
+* Fix: Resolved a dashboard fatal error introduced in 1.4.7 when opening the main settings page after updating from an older version.
+* Fix: Restored the main presets dashboard screen for updated installations.
+* Fix: Avoided menu walker warnings on newer WordPress/PHP environments when a menu item object does not include an ID.
+* Maintenance: Reduced the readme tag list to meet the WordPress.org five-tag limit.
 
 = 1.4.7 =
 * Fix: Removed remaining FREE-version runtime restrictions for built-in preset, import, duplicate, online library, taxonomy assignment, post-level preset, menu item option, header style, and hover style functionality.

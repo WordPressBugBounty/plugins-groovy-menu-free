@@ -1386,6 +1386,159 @@ if ( ! class_exists( 'GroovyMenuSettings' ) ) {
 			<?php
 		}
 
+		public function dashboard() {
+			$presets  = GroovyMenuPreset::getAll();
+			$default  = GroovyMenuPreset::getDefaultPreset();
+			$gm_nonce = wp_create_nonce( 'gm_nonce_editor' );
+
+			/**
+			 * Fires before the groovy menu dashboard output.
+			 *
+			 * @since 1.2.20
+			 */
+			do_action( 'gm_before_dashboard_output' );
+			?>
+
+			<div class="gm-dashboard-container">
+				<?php $this->showDashboardHeader(); ?>
+				<div class="gm-dashboard-body">
+					<div class="gm-infobox gm-infobox-success gm-hidden">
+						<p class="gm-infobox__txt"><?php esc_html_e( 'Preset name saved', 'groovy-menu' ); ?></p>
+					</div>
+					<div class="gm-dashboard-body__title">
+						<h3 class="gm-dashboard-body__title__alpha"><?php esc_html_e( 'Menu presets', 'groovy-menu' ); ?></h3>
+					</div>
+					<input type="hidden" id="gm-nonce-editor-field" name="gm_nonce" value="<?php echo esc_attr( $gm_nonce ); ?>">
+					<div class="gm-dashboard-body_inner">
+						<?php foreach ( $presets as $preset ) { ?>
+							<?php
+							$need_screenshot = false;
+							$preview         = GroovyMenuPreset::getPreviewById( $preset->id );
+
+							if ( ! $preview ) {
+								$need_screenshot = true;
+								$preview         = GROOVY_MENU_URL . 'assets/images/blank.png';
+							}
+
+							$used_count = GroovyMenuUtils::get_preset_used_in_by_id( $preset->id, true );
+							$used_text  = '';
+
+							if ( $used_count ) {
+								$used_text = ' (' . sprintf( esc_html__( '%d uses', 'groovy-menu' ), $used_count ) . ')';
+							}
+							?>
+
+							<div
+								class="preset<?php echo $need_screenshot ? ' preset--need-screenshot' : ''; ?><?php echo ( intval( $default ) === intval( $preset->id ) ) ? ' preset--default' : ''; ?>"
+								data-id="<?php echo esc_attr( $preset->id ); ?>"
+								data-name="<?php echo esc_attr( $preset->name ); ?>">
+
+								<div class="preset-inner">
+									<a class="preset-placeholder" href="?page=groovy_menu_settings&action=edit&id=<?php echo esc_attr( $preset->id ); ?>">
+										<img src="<?php echo esc_url( $preview ); ?>" alt="">
+									</a>
+
+									<div class="preset-info">
+										<div class="preset-title">
+											<input class="preset-title__input" value="<?php echo esc_attr( $preset->name ); ?>" readonly>
+										</div>
+										<div class="preset-options">
+											<i class="fa fa-chevron-down"></i>
+											<ul class="preset-opts__nav">
+												<?php if ( GroovyMenuRoleCapabilities::presetEdit( true ) ) : ?>
+													<li class="preset-opts__nav__item preset-rename">
+														<i class="fa fa-font"></i>
+														<span class="preset-opts__nav__item__txt"><?php esc_html_e( 'Rename', 'groovy-menu' ); ?></span>
+													</li>
+												<?php endif; ?>
+
+												<?php if ( GroovyMenuRoleCapabilities::globalOptions( true ) ) : ?>
+													<li class="preset-opts__nav__item preset-set-default">
+														<i class="fa fa-thumb-tack"></i>
+														<span class="preset-opts__nav__item__txt"><?php esc_html_e( 'Set as default', 'groovy-menu' ); ?></span>
+													</li>
+												<?php endif; ?>
+
+												<li class="preset-opts__nav__item preset-preview">
+													<i class="fa fa-search"></i>
+													<span class="preset-opts__nav__item__txt"><?php esc_html_e( 'Preview', 'groovy-menu' ); ?></span>
+												</li>
+
+												<?php if ( GroovyMenuRoleCapabilities::presetCreate( true ) ) : ?>
+													<li class="preset-opts__nav__item preset-duplicate">
+														<i class="fa fa-clone"></i>
+														<span class="preset-opts__nav__item__txt"><?php esc_html_e( 'Duplicate', 'groovy-menu' ); ?></span>
+													</li>
+												<?php endif; ?>
+
+												<?php if ( GroovyMenuRoleCapabilities::canExport( true ) ) : ?>
+													<li class="preset-opts__nav__item preset-export">
+														<i class="fa fa-paper-plane"></i>
+														<span class="preset-opts__nav__item__txt"><?php esc_html_e( 'Export', 'groovy-menu' ); ?></span>
+													</li>
+												<?php endif; ?>
+
+												<?php if ( ! GroovyMenuPreset::isPreviewThumb( $preset->id ) ) { ?>
+													<?php if ( GroovyMenuRoleCapabilities::presetEdit( true ) ) : ?>
+														<li class="preset-opts__nav__item preset-thumbnail">
+															<i class="fa fa-plus"></i>
+															<span class="preset-opts__nav__item__txt"><?php esc_html_e( 'Set thumbnail', 'groovy-menu' ); ?></span>
+														</li>
+													<?php endif; ?>
+												<?php } else { ?>
+													<?php if ( GroovyMenuRoleCapabilities::presetEdit( true ) ) : ?>
+														<li class="preset-opts__nav__item preset-thumbnail-unset">
+															<i class="fa fa-times"></i>
+															<span class="preset-opts__nav__item__txt"><?php esc_html_e( 'Unset thumbnail', 'groovy-menu' ); ?></span>
+														</li>
+													<?php endif; ?>
+												<?php } ?>
+
+												<?php if ( GroovyMenuRoleCapabilities::presetDelete( true ) ) : ?>
+													<li class="preset-opts__nav__item preset-delete<?php echo $used_text ? ' has-used-in-objects' : ''; ?>">
+														<i class="fa fa-times"></i>
+														<span class="preset-opts__nav__item__txt"><?php esc_html_e( 'Delete', 'groovy-menu' ); ?><?php echo esc_html( $used_text ); ?></span>
+													</li>
+												<?php endif; ?>
+											</ul>
+										</div>
+									</div>
+								</div>
+							</div>
+						<?php } ?>
+
+						<?php if ( GroovyMenuRoleCapabilities::presetCreate( true ) ) : ?>
+							<div class="preset preset--create-new">
+								<div class="preset-inner">
+									<div class="preset-placeholder">
+										<div class="preset-placeholder-inner">
+											<span class="gm-gui-icon gm-icon-list"></span>
+											<span class="preset-title__alpha"><?php esc_html_e( 'New preset', 'groovy-menu' ); ?></span>
+										</div>
+									</div>
+								</div>
+							</div>
+						<?php endif; ?>
+					</div>
+				</div>
+			</div>
+
+			<?php
+			if ( GroovyMenuRoleCapabilities::globalOptions( true ) ) {
+				$this->renderGlobalSettingModal();
+				echo GroovyMenuRenderIconsModal();
+			}
+
+			echo GroovyMenuPreviewModal();
+
+			/**
+			 * Fires after the groovy menu dashboard output.
+			 *
+			 * @since 1.2.20
+			 */
+			do_action( 'gm_after_dashboard_output' );
+		}
+
 
 		public function welcome_full() {
 			return $this->welcome_free();

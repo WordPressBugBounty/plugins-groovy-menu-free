@@ -111,6 +111,10 @@ class AdminWalker extends WalkerNavMenu {
 	 * @return mixed
 	 */
 	public static function setup_fields( $menu_item ) {
+		if ( ! is_object( $menu_item ) || empty( $menu_item->ID ) ) {
+			return $menu_item;
+		}
+
 		$menu_item->is_megamenu            = get_post_meta( $menu_item->ID, self::IS_MEGAMENU_META, true );
 		$menu_item->is_show_featured_image = get_post_meta( $menu_item->ID, self::IS_SHOW_FEATURED_IMAGE, true );
 
